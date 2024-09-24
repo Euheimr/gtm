@@ -55,8 +55,10 @@ build (){
 
   if [[ -f "$BINARY_PATH" ]]; then
     echo "[$SCRIPT_NAME] BUILD SUCCESS !";
+    sleep 2s
   else
     echo "[$SCRIPT_NAME] ERROR: BUILD FAILED to compile !!!"
+    sleep 2s
     exit
   fi
 }
