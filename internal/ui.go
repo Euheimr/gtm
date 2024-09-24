@@ -71,7 +71,7 @@ func getHostInfo() *host.InfoStat {
 }
 
 func SetupLayout() (fMain *tview.Flex) {
-	slog.Debug("Setting up layout ...")
+	slog.Info("Setting up layout ...")
 
 	// This is the BASE box containing ALL OTHER boxes
 	fMain = tview.NewFlex()

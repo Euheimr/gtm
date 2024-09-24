@@ -10,6 +10,8 @@ import (
 
 type ConfigVars struct {
 	Debug          bool
+	Production     bool
+	ClearOldLogs   bool
 	UpdateInterval time.Duration
 	Celsius        bool
 	EnableGPU      bool
@@ -28,12 +30,16 @@ func readConfig() {
 	}
 
 	DEBUG, err := strconv.ParseBool(os.Getenv("DEBUG"))
+	PRODUCTION, err := strconv.ParseBool(os.Getenv("PRODUCTION"))
+	CLEAR_OLD_LOGS, err := strconv.ParseBool(os.Getenv("CLEAR_OLD_LOGS"))
 	UPDATE_INTERVAL, err := strconv.ParseInt(os.Getenv("UPDATE_INTERVAL"), 10, 32)
 	CELSIUS, err := strconv.ParseBool(os.Getenv("CELSIUS"))
 	ENABLE_GPU, err := strconv.ParseBool(os.Getenv("ENABLE_GPU"))
 
 	Cfg = ConfigVars{
 		Debug:          DEBUG,
+		Production:     PRODUCTION,
+		ClearOldLogs:   CLEAR_OLD_LOGS,
 		UpdateInterval: time.Duration(UPDATE_INTERVAL) * time.Millisecond,
 		Celsius:        CELSIUS,
 		EnableGPU:      ENABLE_GPU,
@@ -41,8 +47,10 @@ func readConfig() {
 
 	if Cfg.Debug {
 		slog.Debug("DEBUG=" + os.Getenv("DEBUG"))
-		slog.Debug("UPDATE_INTERVAL=%dms\n", os.Getenv("UPDATE_INTERVAL"))
-		slog.Debug("CELSIUS=%v\n", os.Getenv("CELSIUS"))
-		slog.Debug("ENABLE_GPU=%v\n", os.Getenv("ENABLE_GPU"))
+		slog.Debug("PRODUCTION=" + os.Getenv("PRODUCTION"))
+		slog.Debug("CLEAR_OLD_LOGS=" + os.Getenv("CLEAR_OLD_LOGS"))
+		slog.Debug("UPDATE_INTERVAL=" + os.Getenv("UPDATE_INTERVAL") + "ms")
+		slog.Debug("CELSIUS=" + os.Getenv("CELSIUS"))
+		slog.Debug("ENABLE_GPU=" + os.Getenv("ENABLE_GPU"))
 	}
 }

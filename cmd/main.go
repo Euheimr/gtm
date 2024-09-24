@@ -11,7 +11,7 @@ var fMain *tview.Flex
 
 func main() {
 	// Logging will not work as expected unless we set it first before ANYTHING
-	internal.SetupLogging()
+	internal.SetupFileLogging()
 
 	// Scaffold the FlexBox `Main` and layout
 	fMain = internal.SetupLayout()
@@ -31,12 +31,13 @@ func main() {
 		return event
 	})
 
-	// Start the goroutines handling the drawing of each box here
-	slog.Debug("Setting up UI goroutines ...")
+	// Setup goroutines handling the drawing of each box here
+	slog.Info("Setting up UI goroutines ...")
 	go internal.UpdateCPU(app, internal.Cfg.UpdateInterval)
 	go internal.UpdateCPUTemp(app, internal.Cfg.UpdateInterval)
 	if internal.Cfg.EnableGPU {
-		slog.Debug("Dedicated GPU enabled; setting up GPU & GPUTemp UI goroutines ...")
+		slog.Info("Dedicated GPU enabled; setting up GPU & GPUTemp UI " +
+			"goroutines ...")
 		go internal.UpdateGPU(app, internal.Cfg.UpdateInterval)
 		go internal.UpdateGPUTemp(app, internal.Cfg.UpdateInterval)
 	}
@@ -50,9 +51,9 @@ func main() {
 	//time.Sleep(delay * time.Second)
 
 	// START APP
-	slog.Debug("Starting the app ...")
-	//if err := app.Run(); err != nil {
-	//	panic(err)
-	//}
-
+	slog.Info("Starting the app ...")
+	if err := app.Run(); err != nil {
+		slog.Error("Failed to run the app! " + err.Error())
+		panic(err)
+	}
 }
