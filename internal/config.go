@@ -1,9 +1,8 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"time"
@@ -25,7 +24,7 @@ func init() {
 func readConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		slog.Error("Error loading .env file")
 	}
 
 	DEBUG, err := strconv.ParseBool(os.Getenv("DEBUG"))
@@ -41,9 +40,9 @@ func readConfig() {
 	}
 
 	if Cfg.Debug {
-		fmt.Printf("DEBUG=%v\n", Cfg.Debug)
-		fmt.Printf("UPDATE_INTERVAL=%dms\n", Cfg.UpdateInterval/time.Millisecond)
-		fmt.Printf("CELSIUS=%v\n", Cfg.Celsius)
-		fmt.Printf("ENABLE_GPU=%v\n", Cfg.EnableGPU)
+		slog.Debug("DEBUG=" + os.Getenv("DEBUG"))
+		slog.Debug("UPDATE_INTERVAL=%dms\n", os.Getenv("UPDATE_INTERVAL"))
+		slog.Debug("CELSIUS=%v\n", os.Getenv("CELSIUS"))
+		slog.Debug("ENABLE_GPU=%v\n", os.Getenv("ENABLE_GPU"))
 	}
 }

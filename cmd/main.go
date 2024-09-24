@@ -4,11 +4,15 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"gtm/internal"
+	"log/slog"
 )
 
 var fMain *tview.Flex
 
 func main() {
+	// Logging will not work as expected unless we set it first before ANYTHING
+	internal.SetupLogging()
+
 	// Scaffold the FlexBox `Main` and layout
 	fMain = internal.SetupLayout()
 
@@ -28,9 +32,11 @@ func main() {
 	})
 
 	// Start the goroutines handling the drawing of each box here
+	slog.Debug("Setting up UI goroutines ...")
 	go internal.UpdateCPU(app, internal.Cfg.UpdateInterval)
 	go internal.UpdateCPUTemp(app, internal.Cfg.UpdateInterval)
 	if internal.Cfg.EnableGPU {
+		slog.Debug("Dedicated GPU enabled; setting up GPU & GPUTemp UI goroutines ...")
 		go internal.UpdateGPU(app, internal.Cfg.UpdateInterval)
 		go internal.UpdateGPUTemp(app, internal.Cfg.UpdateInterval)
 	}
@@ -44,8 +50,9 @@ func main() {
 	//time.Sleep(delay * time.Second)
 
 	// START APP
-	if err := app.Run(); err != nil {
-		panic(err)
-	}
+	slog.Debug("Starting the app ...")
+	//if err := app.Run(); err != nil {
+	//	panic(err)
+	//}
 
 }

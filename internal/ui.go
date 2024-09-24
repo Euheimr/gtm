@@ -71,6 +71,8 @@ func getHostInfo() *host.InfoStat {
 }
 
 func SetupLayout() (fMain *tview.Flex) {
+	slog.Debug("Setting up layout ...")
+
 	// This is the BASE box containing ALL OTHER boxes
 	fMain = tview.NewFlex()
 	// Ensure the base "Main" layout view is always Rows and not Columns
@@ -117,6 +119,7 @@ func SetupLayout() (fMain *tview.Flex) {
 func UpdateCPU(app *tview.Application, update time.Duration) {
 	// TODO: get CPU name and speed then update label to that?
 	layout.CPU.SetBorder(true).SetTitle(lblCPU)
+	slog.Debug("Starting `UpdateCPU()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -130,6 +133,7 @@ func UpdateCPU(app *tview.Application, update time.Duration) {
 
 func UpdateCPUTemp(app *tview.Application, update time.Duration) {
 	layout.CPUTemp.SetBorder(true).SetTitle(lblCPUTemp)
+	slog.Debug("Starting `UpdateCPUTemp()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -141,6 +145,7 @@ func UpdateCPUTemp(app *tview.Application, update time.Duration) {
 
 func UpdateGPU(app *tview.Application, update time.Duration) {
 	layout.GPU.SetBorder(true).SetTitle(lblGPU)
+	slog.Debug("Starting `UpdateGPU()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -152,6 +157,7 @@ func UpdateGPU(app *tview.Application, update time.Duration) {
 
 func UpdateGPUTemp(app *tview.Application, update time.Duration) {
 	layout.GPUTemp.SetBorder(true).SetTitle(lblGPUTemp)
+	slog.Debug("Starting `UpdateGPUTemp()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -163,6 +169,7 @@ func UpdateGPUTemp(app *tview.Application, update time.Duration) {
 
 func UpdateMemory(app *tview.Application, update time.Duration) {
 	layout.Memory.SetBorder(true).SetTitle(lblMemory)
+	slog.Debug("Starting `UpdateMemory()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -174,6 +181,7 @@ func UpdateMemory(app *tview.Application, update time.Duration) {
 
 func UpdateNetwork(app *tview.Application, update time.Duration) {
 	layout.Network.SetBorder(true).SetTitle(lblNetwork)
+	slog.Debug("Starting `UpdateNetwork()` goroutine ...")
 
 	for {
 		time.Sleep(update)
@@ -185,6 +193,7 @@ func UpdateNetwork(app *tview.Application, update time.Duration) {
 
 func UpdateProcesses(app *tview.Application, update time.Duration) {
 	layout.Processes.SetBorder(true).SetTitle(lblProc)
+	slog.Debug("Starting `UpdateProcesses()` goroutine ...")
 
 	for {
 		time.Sleep(update)
