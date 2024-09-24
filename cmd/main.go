@@ -9,24 +9,12 @@ import (
 var fMain *tview.Flex
 
 func main() {
-
-	// Scaffold the `Main` FlexBox and layout
+	// Scaffold the FlexBox `Main` and layout
 	fMain = internal.SetupLayout()
 
 	// Create a new application and be sure to set the root object
 	app := tview.NewApplication()
 	app.SetRoot(fMain, true).EnableMouse(true)
-
-	// Start the goroutines handling the drawing of each box here
-	go internal.UpdateCPU(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateCPUTemp(app, internal.Cfg.UpdateInterval)
-	if internal.Cfg.EnableGPU {
-		go internal.UpdateGPU(app, internal.Cfg.UpdateInterval)
-		go internal.UpdateGPUTemp(app, internal.Cfg.UpdateInterval)
-	}
-	go internal.UpdateMemory(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateNetwork(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateProcesses(app, internal.Cfg.UpdateInterval)
 
 	// Setup keybinds ...
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -38,6 +26,17 @@ func main() {
 		}
 		return event
 	})
+
+	// Start the goroutines handling the drawing of each box here
+	go internal.UpdateCPU(app, internal.Cfg.UpdateInterval)
+	go internal.UpdateCPUTemp(app, internal.Cfg.UpdateInterval)
+	if internal.Cfg.EnableGPU {
+		go internal.UpdateGPU(app, internal.Cfg.UpdateInterval)
+		go internal.UpdateGPUTemp(app, internal.Cfg.UpdateInterval)
+	}
+	go internal.UpdateMemory(app, internal.Cfg.UpdateInterval)
+	go internal.UpdateNetwork(app, internal.Cfg.UpdateInterval)
+	go internal.UpdateProcesses(app, internal.Cfg.UpdateInterval)
 
 	// TODO: REMOVE ME - this is for testing
 	//delay := time.Duration(5)
