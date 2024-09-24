@@ -104,12 +104,12 @@ func SetupLayout() (fMain *tview.Flex) {
 	}
 	fMain.AddItem(flexRow2, 0, 40, false)
 
-	//flexRow3 := tview.NewFlex()
+	flexRow3 := tview.NewFlex()
 	// ROW 3
-	//flexRow3.AddItem(tview.NewTextView().
-	//	SetText(" <F1> Test   <F2> Test 1   <F3> Test 2   <F4> Test 3"),
-	//	0, 1, false)
-	//fMain.AddItem(flexRow3, 0, 1, false)
+	flexRow3.AddItem(tview.NewTextView().
+		SetText(" <F1> Test   <F2> Test 1   <F3> Test 2   <F4> Test 3"),
+		0, 1, false)
+	fMain.AddItem(flexRow3, 0, 1, false)
 
 	return fMain
 }
