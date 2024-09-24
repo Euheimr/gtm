@@ -3,9 +3,9 @@ module gtm
 go 1.23.1
 
 require (
-	github.com/gdamore/tcell/v2 v2.7.1
+	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/joho/godotenv v1.5.1
-	github.com/rivo/tview v0.0.0-20240818110301-fd649dbf1223
+	github.com/rivo/tview v0.0.0-20240921122403-a64fc48d7654
 	github.com/shirou/gopsutil/v4 v4.24.8
 )
 
