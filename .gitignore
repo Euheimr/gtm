@@ -5,6 +5,7 @@ _ref/
 .run/
 bin/
 vendor/
+log/
 
 *.env
 config.toml
