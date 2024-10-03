@@ -3,18 +3,25 @@ package main
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"gtm/internal"
+	"gtm"
+	"gtm/ui"
 	"log/slog"
+	"runtime"
 )
 
 var fMain *tview.Flex
 
-func main() {
+func init() {
 	// Logging will not work as expected unless we set it first before ANYTHING
-	internal.SetupFileLogging()
+	gtm.SetupFileLogging()
 
+	gtm.GetHostInfo()
+	gtm.GetGPUInfo()
+}
+
+func main() {
 	// Scaffold the FlexBox `Main` and layout
-	fMain = internal.SetupLayout()
+	fMain = ui.SetupLayout()
 
 	// Create a new application and be sure to set the root object
 	app := tview.NewApplication()
@@ -33,17 +40,18 @@ func main() {
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
-	go internal.UpdateCPU(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateCPUTemp(app, internal.Cfg.UpdateInterval)
-	if internal.Cfg.EnableGPU {
+	go ui.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
+	go ui.UpdateCPUTemp(app, false, gtm.Cfg.UpdateInterval)
+	go ui.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
+	if gtm.HasGPU() && runtime.GOOS != "darwin" {
 		slog.Info("Dedicated GPU enabled; setting up GPU & GPUTemp UI " +
 			"goroutines ...")
-		go internal.UpdateGPU(app, internal.Cfg.UpdateInterval)
-		go internal.UpdateGPUTemp(app, internal.Cfg.UpdateInterval)
+		go ui.UpdateGPU(app, true, gtm.Cfg.UpdateInterval)
+		go ui.UpdateGPUTemp(app, true, gtm.Cfg.UpdateInterval)
 	}
-	go internal.UpdateMemory(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateNetwork(app, internal.Cfg.UpdateInterval)
-	go internal.UpdateProcesses(app, internal.Cfg.UpdateInterval)
+	go ui.UpdateMemory(app, true, gtm.Cfg.UpdateInterval)
+	go ui.UpdateNetwork(app, true, gtm.Cfg.UpdateInterval)
+	go ui.UpdateProcesses(app, true, gtm.Cfg.UpdateInterval)
 
 	// TODO: REMOVE ME - this is for testing
 	//delay := time.Duration(5)
