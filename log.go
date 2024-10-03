@@ -1,4 +1,4 @@
-package internal
+package gtm
 
 /// This article was a nice guide to colorized terminal logging:
 // https://dusted.codes/creating-a-pretty-console-logger-using-gos-slog-package
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -207,11 +208,10 @@ func SetupFileLogging() {
 	if err != nil {
 		slog.Error("Failed to get current working directory !")
 	}
-	cwd = cwd + "\\"
-	logsDir := cwd + "log\\"
+	logsDir := filepath.Join(cwd, "log")
 
 	if Cfg.ClearOldLogs {
-		err = os.RemoveAll(logsDir + "\\")
+		err = os.RemoveAll(logsDir)
 		if err != nil {
 			slog.Error("Failed to remove old log files !")
 		}
@@ -231,10 +231,10 @@ func SetupFileLogging() {
 	timestampString := strings.ReplaceAll(timestamp, ":", ".")
 	timestampString = strings.ReplaceAll(timestampString, " ", "_")
 
-	logPathFilename := logsDir + timestampString + "_test.log"
-	file, err := os.Create(logPathFilename)
+	logFilepath := filepath.Join(logsDir, timestampString+".log")
+	file, err := os.Create(logFilepath)
 	if err != nil {
-		slog.Error("Failed to create log file at " + logPathFilename + " !")
+		slog.Error("Failed to create log file at " + logFilepath + " !")
 	}
 
 	opts := &slog.HandlerOptions{
