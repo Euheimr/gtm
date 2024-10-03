@@ -1,4 +1,4 @@
-package internal
+package gtm
 
 import (
 	"github.com/joho/godotenv"
