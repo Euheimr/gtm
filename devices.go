@@ -154,14 +154,18 @@ func GetCpuModel() string {
 		cpuModel = strings.ReplaceAll(cpuModel, "CPU @ ", "@")
 		cpuModel = strings.ReplaceAll(cpuModel, "Core ", "")
 	}
-
 	return cpuModel
 }
 
 func HasGPU() bool {
-	if gpuInfo == nil {
+	if !Cfg.EnableGPU {
+		slog.Info("EnableGPU disabled (false) in .env !")
+		return false
+	} else if gpuInfo == nil {
+		slog.Info("gpuInfo is nil - GPU NOT FOUND")
 		return false
 	} else if Cfg.EnableGPU && len(gpuInfo.GraphicsCards) > 0 {
+		slog.Info("EnableGPU is true in .env and at least 1 dedicated GPU is installed")
 		return true
 	} else {
 		return false
