@@ -9,25 +9,22 @@ import (
 
 func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText   string
-		isResized bool
-		w, h      int
+		boxText string
+		w, h    int
+		//isResized bool
 	)
 
 	Layout.Disk.SetBorder(showBorder).SetTitle(LblDisk)
 	slog.Info("Starting `UpdateDisk()` UI goroutine ...")
 
 	for {
-		w, h, isResized = GetInnerBoxSize(Layout.Disk.Box, w, h)
+		w, h, _ = GetInnerBoxSize(Layout.Disk.Box, w, h)
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
 			boxText = "col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h)
-
-			if isResized {
-				Layout.Disk.SetText(boxText)
-			}
+			Layout.Disk.SetText(boxText)
 		})
 	}
 }

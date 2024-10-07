@@ -47,14 +47,11 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 		memUsedRatio := memUsed / memTotal
 		barTextRow := BuildHorizontalTextBar(width, memUsedRatio)
 
-		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
-			boxText = labelRow + "\n" + barTextRow + "\n" + barMemoryStatsRow
+			boxText = labelRow + "\n" + barTextRow + "\n" + barMemoryStatsRow + "\n" + strconv.Itoa(int(timeDelta))
 			Layout.Memory.SetText(boxText)
 
-			if isResized {
-			}
 		})
 	}
 }

@@ -10,9 +10,9 @@ import (
 
 func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText   string
-		isResized bool
-		w, h      int
+		boxText string
+		w, h    int
+		//isResized bool
 	)
 
 	gpuName := gtm.GetGPUName()
@@ -22,41 +22,35 @@ func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 	slog.Info("Starting `UpdateGPU()` UI goroutine ...")
 
 	for {
-		w, h, isResized = GetInnerBoxSize(Layout.GPU.Box, w, h)
+		w, h, _ = GetInnerBoxSize(Layout.GPU.Box, w, h)
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
 			boxText = "col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h)
-
-			if isResized {
-				Layout.GPU.SetText(boxText)
-			}
+			Layout.GPU.SetText(boxText)
 		})
 	}
 }
 
 func UpdateGPUTemp(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText   string
-		isResized bool
-		w, h      int
+		boxText string
+		w, h    int
+		//isResized bool
 	)
 
 	Layout.GPUTemp.SetBorder(showBorder).SetTitle(LblGPUTemp)
 	slog.Info("Starting `UpdateGPUTemp()` UI goroutine ...")
 
 	for {
-		w, h, isResized = GetInnerBoxSize(Layout.GPUTemp.Box, w, h)
+		w, h, _ = GetInnerBoxSize(Layout.GPUTemp.Box, w, h)
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
 			boxText = "col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h)
-
-			if isResized {
-				Layout.GPUTemp.SetText(boxText)
-			}
+			Layout.GPUTemp.SetText(boxText)
 		})
 	}
 }
