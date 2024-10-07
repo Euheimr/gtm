@@ -165,16 +165,13 @@ func GetInnerBoxSize(box *tview.Box, oldWidth int, oldHeight int) (width int, he
 	_, _, width, height = box.GetInnerRect()
 	isResized = false
 
-	if Cfg.Debug {
-		if (oldWidth != 0 || oldHeight != 0) && (oldWidth != width || oldHeight != height) {
-			isResized = true
-			boxTitle := strings.TrimSpace(box.GetTitle())
+	if (oldWidth != 0 || oldHeight != 0) && (oldWidth != width || oldHeight != height) {
+		isResized = true
+		boxTitle := strings.TrimSpace(box.GetTitle())
 
-			slog.Debug(boxTitle + " inner box size changed from (" +
-				strconv.Itoa(oldWidth) + "->" + strconv.Itoa(width) + ") columns " +
-				"and (" + strconv.Itoa(oldHeight) + "->" + strconv.Itoa(height) +
-				") rows !")
-		}
+		slog.Debug(boxTitle + " inner box size changed from (" +
+			strconv.Itoa(oldWidth) + "->" + strconv.Itoa(width) + ") columns " +
+			"and (" + strconv.Itoa(oldHeight) + "->" + strconv.Itoa(height) + ") rows !")
 	}
 	return width, height, isResized
 }
