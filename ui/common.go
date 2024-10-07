@@ -179,15 +179,6 @@ func GetInnerBoxSize(box *tview.Box, oldWidth int, oldHeight int) (width int, he
 	return width, height, isResized
 }
 
-func ConvertBytesToGB(ramBytes uint64, round bool) float64 {
-	const GIGABYTE = 1_073_741_824
-	if !round {
-		return float64(ramBytes) / GIGABYTE
-	} else {
-		return math.RoundToEven(float64(ramBytes) / GIGABYTE)
-	}
-}
-
 func InsertCenterSpacing(arg1 string, arg2 string, boxWidth int,
 	spaceChar string) (spaces string) {
 

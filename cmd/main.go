@@ -15,8 +15,13 @@ func init() {
 	// Logging will not work as expected unless we set it first before ANYTHING
 	gtm.SetupFileLogging()
 
-	gtm.GetHostInfo()
+	gtm.GetCPUInfo()
+	gtm.GetDiskInfo()
 	gtm.GetGPUInfo()
+	gtm.GetHostInfo()
+	gtm.GetMemoryInfo()
+	gtm.GetNetworkInfo()
+	gtm.GetSensorsInfo()
 }
 
 func main() {
