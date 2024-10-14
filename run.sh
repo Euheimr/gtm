@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
+export CGO_ENABLED=0
 
-# It's business time!
 BINARY_NAME="gtm"
 MAIN_GO_FOLDER="cmd"
 BINARY_FOLDER="bin"
+
+# this is a local variable that's set to 1 in case a build was attempted but failed
+build_attempted=0
 
 # Get the current directory of this script and the script name then cd to it
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_NAME=$(basename "$0")
 cd "$DIR"
+
+echo "[$SCRIPT_NAME] CGO_ENABLED=$CGO_ENABLED"
 
 # This is meant to rename the binary with the customary windows .EXE if we are building on windows
 BINARY_POSTFIX=""
@@ -19,10 +24,6 @@ fi
 
 BINARY_NAME=$BINARY_NAME$BINARY_POSTFIX
 BINARY_PATH="$BINARY_FOLDER/$BINARY_NAME"
-
-
-# this is a variable that's set to 1 in case a build was attempted but failed
-build_attempted=0
 
 clean () {
   if [[ -d "$BINARY_FOLDER" ]]; then
