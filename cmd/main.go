@@ -43,7 +43,8 @@ func main() {
 
 	// Create a new application and be sure to set the root object
 	app := tview.NewApplication()
-	app.SetRoot(fMain, true).EnableMouse(true)
+	// TODO: Enable mouse clicking when adding mouse input captures in the future
+	app.SetRoot(fMain, true).EnableMouse(false)
 
 	// Setup keybinds ...
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
