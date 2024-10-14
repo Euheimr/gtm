@@ -13,6 +13,10 @@ config.toml
 !assets/*
 assets/*.url
 
+# pprof (perf testing generated charts as svg)
+heap.svg
+allocs.svgf
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
