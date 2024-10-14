@@ -33,8 +33,8 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 		/// END DATA FETCH
 
 		//boxSize := "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
-		memUsed := gtm.ConvertBytesToGB(memInfo.Used, false)
-		memTotal := gtm.ConvertBytesToGB(memInfo.Total, false)
+		memUsed := gtm.ConvertBytesToGiB(memInfo.Used, false)
+		memTotal := gtm.ConvertBytesToGiB(memInfo.Total, false)
 		memUsedText := strconv.FormatFloat(memUsed, 'f', 1, 64) + " GB"
 		memTotalText := strconv.FormatFloat(memTotal, 'f', 1, 64) + " GB"
 
