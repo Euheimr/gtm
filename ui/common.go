@@ -30,10 +30,10 @@ const (
 	BLACK  string = "[black]"
 	BLUE          = "[blue]"
 	GREEN         = "[green]"
+	GRAY          = "[gray]"
 	RED           = "[red]"
 	WHITE         = "[white]"
 	YELLOW        = "[yellow]"
-	GRAY          = "[gray]"
 )
 
 var blockSymbols = [4]string{"░", "▒", "▓", "█"}
