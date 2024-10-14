@@ -125,14 +125,17 @@ func SetupLayout() (fMain *tview.Flex) {
 	return fMain
 }
 
-func BuildHorizontalTextBar(columns int, ratio float64) string {
+func BuildHorizontalTextBar(columns int, ratio float64, color1 string, color2 string) string {
+	// FIXME: rename the color1 / color2 params?
 	var (
 		startChar = blockSymbols[3]
 		usedChar  = blockSymbols[3]
 		spaceChar = blockSymbols[0]
 		endChar   = blockSymbols[0]
 	)
-	barText := startChar
+	// if we are color coding, insert the color code tag here for USED
+	barText := color1
+	barText += startChar
 	// We -1 the size of the "used" part of the bar to make room for the first element
 	//	containing the "[" bracket
 	barUsed := int(math.Round(float64(columns)*ratio)) - 1
@@ -142,17 +145,20 @@ func BuildHorizontalTextBar(columns int, ratio float64) string {
 	spacingOffset := columns - barUsed - 1
 
 	for i := range barUsed {
+
 		// If we aren't on the last element, builds a bar of "used memory"
 		//	ie.  [|||||||    <- like this
 		if i != (barUsed - 1) {
-			barText = barText + usedChar
+			barText += usedChar
 		} else {
+			// Add in the second color for the "unused" portion of the bar
+			barText += color2
 			for range spacingOffset {
 				// [||||||||        ] Now add the spacing offset to make a complete bar
 				//         HERE ^
-				barText = barText + spaceChar
+				barText += spaceChar
 			}
-			barText = barText + endChar
+			barText += endChar
 			// the complete bar should look like:  [||||||||        ] (at 50% load)
 		}
 	}
