@@ -14,6 +14,8 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 		boxText       string
 		width, height int
 		//isResized     bool
+		lastDataFetch time.Time
+		memInfo       *mem.VirtualMemoryStat
 	)
 
 	Layout.Memory.SetDynamicColors(true)
@@ -23,7 +25,12 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 	for {
 		timestamp := time.Now().UnixMilli()
 
-		memInfo := gtm.GetMemoryInfo()
+		// Limit getting device data to just once a second, and NOT with every UI update
+		if time.Since(lastDataFetch) >= time.Second || len(memInfo.String()) < 1 {
+			memInfo = gtm.GetMemoryInfo()
+			lastDataFetch = time.Now()
+		}
+		/// END DATA FETCH
 
 		//boxSize := "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
 		memUsed := gtm.ConvertBytesToGB(memInfo.Used, false)
@@ -35,7 +42,6 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 		if timeDelta < update.Milliseconds() {
 			time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
 		}
-		//time.Sleep(update)
 
 		width, height, _ = GetInnerBoxSize(Layout.Memory.Box, width, height)
 		barMemoryStatsRow := memUsedText +
