@@ -30,7 +30,7 @@ clean () {
     echo "[$SCRIPT_NAME] \`$PWD/$BINARY_FOLDER\` already exists. Skipping folder creation ..."
     if [[ -f "$BINARY_PATH" ]]; then
       echo "[$SCRIPT_NAME] Removing old binary: \`$PWD/$BINARY_PATH\` ..."
-      rm "$BINARY_PATH" -f
+      rm --force "$BINARY_PATH"
       if [[ ! -f "$BINARY_PATH" ]]; then
         echo "[$SCRIPT_NAME] Successfully DELETED $PWD/$BINARY_PATH !"
       fi
@@ -73,8 +73,9 @@ run (){
   fi
 }
 
-# Process option flags passed to ./run.sh ...
+####     It's business time!     ####
 while [ $# -gt 0 ]; do
+  # Process option flags passed to ./run.sh ...
   case $1 in
     -b | build | --build ) build
       ;;
