@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/rivo/tview"
+	"github.com/shirou/gopsutil/v4/mem"
 	"gtm"
 	"log/slog"
 	"strconv"
@@ -15,6 +16,7 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 		//isResized     bool
 	)
 
+	Layout.Memory.SetDynamicColors(true)
 	Layout.Memory.SetBorder(showBorder).SetTitle(LblMemory)
 	slog.Info("Starting `UpdateMemory()` UI goroutine ...")
 
@@ -45,7 +47,7 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 			"Total"
 		// Get the ratio of memory used and total memory. Use the ratio to build a text bar
 		memUsedRatio := memUsed / memTotal
-		barTextRow := BuildHorizontalTextBar(width, memUsedRatio)
+		barTextRow := BuildHorizontalTextBar(width, memUsedRatio, GREEN, WHITE)
 
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
