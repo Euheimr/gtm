@@ -5,8 +5,10 @@ import (
 	"github.com/rivo/tview"
 	"gtm"
 	"gtm/ui"
+	"log"
 	"log/slog"
-	"runtime"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var fMain *tview.Flex
@@ -15,6 +17,17 @@ func init() {
 	// Logging will not work as expected unless we set it first before ANYTHING
 	gtm.SetupFileLogging()
 
+	if gtm.Cfg.Debug {
+		// This is for performance profiling (pprof). Open a web browser and see:
+		//	http://localhost:6060/debug/pprof/
+		go func() {
+			// For docs, see: https://pkg.go.dev/runtime/pprof and:
+			//	https://github.com/google/pprof/blob/main/doc/README.md
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
+
+	// Seed the initial values & data before setting up the rest of the app
 	gtm.GetCPUInfo()
 	gtm.GetDiskInfo()
 	gtm.GetGPUInfo()
