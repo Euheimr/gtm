@@ -9,8 +9,8 @@ import (
 
 func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText string
-		w, h    int
+		boxText       string
+		width, height int
 		//isResized bool
 	)
 
@@ -19,13 +19,13 @@ func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 	slog.Info("Starting `UpdateCPU()` UI goroutine ...")
 
 	for {
-		w, h, _ = GetInnerBoxSize(Layout.CPU.Stats.Box, w, h)
+		width, height, _ = GetInnerBoxSize(Layout.CPU.Stats.Box, width, height)
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 			// TODO: use 2 boxes as columns (side-by-side) to display a graph and stats
 			// 	(in that order)
-			boxText = "col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h) + "\n"
+			boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 			Layout.CPU.Stats.SetText(boxText)
 		})
 	}
@@ -33,8 +33,8 @@ func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 
 func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText string
-		w, h    int
+		boxText       string
+		width, height int
 		//isResized bool
 	)
 
@@ -42,12 +42,12 @@ func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration
 	slog.Info("Starting `UpdateCPUTemp()` UI goroutine ...")
 
 	for {
-		w, h, _ = GetInnerBoxSize(Layout.CPU.Stats.Box, w, h)
+		width, height, _ = GetInnerBoxSize(Layout.CPU.Temp.Box, width, height)
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
 
-			boxText = "col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h) + "\n"
+			boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 			Layout.CPU.Temp.SetText(boxText)
 
 		})
