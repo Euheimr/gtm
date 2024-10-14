@@ -85,7 +85,7 @@ func SetupLayout() (fMain *tview.Flex) {
 
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
-	cpuParentBox.SetBorder(true).SetTitle(" " + gtm.GetCpuModel() + " ")
+	cpuParentBox.SetBorder(true).SetTitle(" " + gtm.GetCPUModel(true) + " ")
 	flexRow1.AddItem(cpuParentBox.
 		AddItem(Layout.CPU.Stats, 0, 5, false).
 		AddItem(Layout.CPU.Temp, 0, 2, false),

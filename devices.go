@@ -1,8 +1,8 @@
 package gtm
 
 import (
-	"github.com/jaypipes/ghw"
-	"github.com/jaypipes/ghw/pkg/gpu"
+	"encoding/json"
+	"fmt"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
@@ -11,38 +11,55 @@ import (
 	"github.com/shirou/gopsutil/v4/sensors"
 	"log/slog"
 	"math"
+	"os/exec"
 	"strconv"
 	"strings"
 )
 
-const GIGABYTE = 1_073_741_824
+const GIBIBYTE = 1_073_741_824 // binary base 2^30 or 1024^3
+//const GIGABYTE = 1_000_000_000 // base 10^9
+
+type GPUData struct {
+	Id          int32   `json:"id"`
+	Load        float64 `json:"load"`
+	MemoryUsage float64 `json:"memoryUsage"`
+	MemoryTotal float64 `json:"memoryTotal"`
+	Power       float64 `json:"power"`
+	Temperature int32   `json:"temperature"`
+}
 
 var (
 	cpuInfo  []cpu.InfoStat
 	diskInfo []disk.PartitionStat
-	gpuInfo  *gpu.Info
+	//gpuInfo  *[]GPUData
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
 	sensInfo []sensors.TemperatureStat
 )
 
-func init() {
+var (
+	cpuModelName string
+	hostname     string
+	gpuName      string
+)
 
-	//dInfo, err := disk.Usage("/")
-	//if err != nil {
-	//	slog.Error("Failed to retrieve disk.Usage()! " + err.Error())
-	//}
-	//diskInfo = dInfo
+var (
+	HasGPU    bool
+	GPUVendor string
+)
+
+func init() {
+	HasGPU = hasGPU()
 }
 
-func ConvertBytesToGB(ramBytes uint64, round bool) (result float64) {
-	result = float64(ramBytes) / GIGABYTE
-	if !round {
-		return result
-	} else {
-		// effectively return an integer via rounding the float (ie. "11.0" GB)
+func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
+	result = float64(bytes) / GIBIBYTE
+	if rounded {
+		// effectively return an integer via rounding the float to an int (ie. "11.0" GB)
 		return math.RoundToEven(result)
+	} else {
+		return result
 	}
 }
 
@@ -53,10 +70,29 @@ func GetCPUInfo() []cpu.InfoStat {
 	}
 	cpuInfo = cInfo
 	slog.Debug("cpu.Info(): "+cpuInfo[0].String(), "socketCount", len(cpuInfo))
+
+	// model name doesn't change with each syscall... so cache it here
+	cpuModelName = cpuInfo[0].ModelName
+
 	return cpuInfo
 }
 
-func GetDiskInfo() {
+func GetCPUModel(formatName bool) string {
+	if cpuModelName == "" {
+		GetCPUInfo()
+	}
+	cpuModel := cpuModelName
+	if formatName && cpuInfo[0].VendorID == "GenuineIntel" {
+		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
+		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
+		cpuModel = strings.ReplaceAll(cpuModel, "CPU @ ", "@")
+		cpuModel = strings.ReplaceAll(cpuModel, "Core ", "")
+	}
+	// TODO: format AMD & ARM ?
+	return cpuModel
+}
+
+func GetDiskInfo() []disk.PartitionStat {
 	dInfo, err := disk.Partitions(false)
 	if err != nil {
 		slog.Error("Failed to retrieve disk.Partitions()! " + err.Error())
@@ -66,18 +102,133 @@ func GetDiskInfo() {
 	for i, dsk := range diskInfo {
 		slog.Debug("disk.Partitions(): disk #" + strconv.Itoa(i) + ": " + dsk.String())
 	}
+	return diskInfo
 }
 
-func GetGPUInfo() *gpu.Info {
-	gInfo, err := ghw.GPU()
-	if err != nil {
-		slog.Error("Failed to retrieve gpu.Info()! " + err.Error())
-		return nil
+func parseGPUNvidiaData(output []byte) []GPUData {
+	var gpuData []GPUData
+
+	info := strings.Split(string(output), "\n")
+	for _, line := range info {
+		if line != "" {
+			data := strings.Split(line, ", ")
+			gpuName = data[1]
+
+			id, err := strconv.ParseInt(data[0], 10, 32)
+			if err != nil {
+				slog.Error("Failed to parse GPU Id from string -> int ! " + err.Error())
+			}
+
+			load, err := strconv.ParseInt(data[2], 10, 32)
+			if err != nil {
+				slog.Error("Failed to parse GPU Load from string -> int ! " + err.Error())
+			}
+
+			memoryUsage, err := strconv.ParseFloat(data[3], 64)
+			if err != nil {
+				slog.Error("Failed to parse float: memory.usage !" + err.Error())
+				memoryUsage = 0.0
+			}
+			memoryTotal, err := strconv.ParseFloat(data[4], 64)
+			if err != nil {
+				slog.Error("Failed to parse float: memory.total !" + err.Error())
+				memoryTotal = 0.0
+			}
+
+			power, err := strconv.ParseFloat(data[5], 64)
+			if err != nil {
+				slog.Error("Failed to parse float: power !" + err.Error())
+			}
+
+			t := strings.ReplaceAll(data[6], "\r", "")
+			temp, err := strconv.ParseInt(t, 10, 32)
+			if err != nil {
+				slog.Error("Failed to parse float: temp !" + err.Error())
+			}
+
+			gpu := GPUData{
+				Id:          int32(id),
+				Load:        float64(load) / 100,
+				MemoryUsage: memoryUsage,
+				MemoryTotal: memoryTotal,
+				Power:       power,
+				// on windows, there's a carriage return on the last stat
+				Temperature: int32(temp),
+			}
+			gpuData = append(gpuData, gpu)
+		}
 	}
-	gpuInfo = gInfo
-	slog.Debug("gpu.Info(): " + gpuInfo.String())
-	return gpuInfo
+	return gpuData
 }
+
+func getGPUNvidiaData() ([]GPUData, error) {
+	cmd := exec.Command("nvidia-smi",
+		"--query-gpu=index,name,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu",
+		"--format=csv,noheader,nounits")
+
+	output, err := cmd.Output()
+	if err != nil {
+		slog.Error("Failed to get nvidia-smi output! " + err.Error())
+		return nil, err
+	}
+	return parseGPUNvidiaData(output), nil
+}
+
+func hasGPU() bool {
+	if err := exec.Command("nvidia-smi").Run(); err == nil {
+		GPUVendor = "nvidia"
+		return true
+	}
+	if err := exec.Command("rocm-smi").Run(); err == nil {
+		GPUVendor = "amd"
+		return true
+	}
+	slog.Error("hasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
+	return false
+}
+
+func (g GPUData) String() string {
+	// NVIDIA always reports memory usage in MiB
+	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
+	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
+
+	//memoryUsageGiB = fmt.Sprintf("%.2f", (g.MemoryUsage/g.MemoryTotal))
+
+	return fmt.Sprintf("#%v, %v%%, %v MiB, %v MiB, %vW, %v°C",
+		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
+}
+
+func (g GPUData) JSON() string {
+	out, err := json.MarshalIndent(g, "", "  ")
+	if err != nil {
+		slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
+		return ""
+	}
+	return string(out)
+}
+
+func GetGPUInfo() []GPUData {
+	if HasGPU {
+		switch GPUVendor {
+		case "nvidia":
+			data, err := getGPUNvidiaData()
+			if err != nil {
+				slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " + err.Error())
+			}
+			lastDataStat := data[len(data)-1]
+			slog.Debug(lastDataStat.String())
+			return data
+
+		case "amd":
+			// TODO: write rocm-smi code for AMD gpu detection and data parsing
+			slog.Error("AMD GPU not implemented yet !")
+			return nil
+		}
+	}
+	return nil
+}
+
+func GetGPUName() string { return gpuName }
 
 func GetHostInfo() *host.InfoStat {
 	hInfo, err := host.Info()
@@ -86,7 +237,18 @@ func GetHostInfo() *host.InfoStat {
 	}
 	hostInfo = hInfo
 	slog.Debug("host.Info(): " + hostInfo.String())
+
+	hostname = hostInfo.Hostname
 	return hostInfo
+}
+
+func GetHostname() string {
+	if hostname != "" {
+		return hostname
+	} else {
+		GetHostInfo()
+		return hostname
+	}
 }
 
 func GetMemoryInfo() *mem.VirtualMemoryStat {
@@ -136,53 +298,10 @@ func GetSensorsInfo() []sensors.TemperatureStat {
 		slog.Error("Failed to retrieve sensors.SensorsTemperatures()! " + err.Error())
 	}
 	sensInfo = sInfo
+
 	for i, sensor := range sensInfo {
 		slog.Debug("sensors.SensorsTemperatures(), sensor #" + strconv.Itoa(i) + ": " +
 			sensor.String())
 	}
 	return sensInfo
-}
-
-func GetCpuModel() string {
-	if cpuInfo == nil {
-		GetCPUInfo()
-	}
-	cpuModel := cpuInfo[0].ModelName
-	if cpuInfo[0].VendorID == "GenuineIntel" {
-		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
-		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
-		cpuModel = strings.ReplaceAll(cpuModel, "CPU @ ", "@")
-		cpuModel = strings.ReplaceAll(cpuModel, "Core ", "")
-	}
-	return cpuModel
-}
-
-func HasGPU() bool {
-	if !Cfg.EnableGPU {
-		slog.Info("EnableGPU disabled (false) in .env !")
-		return false
-	} else if gpuInfo == nil {
-		slog.Info("gpuInfo is nil - GPU NOT FOUND")
-		return false
-	} else if Cfg.EnableGPU && len(gpuInfo.GraphicsCards) > 0 {
-		slog.Info("EnableGPU is true in .env and at least 1 dedicated GPU is installed")
-		return true
-	} else {
-		return false
-	}
-}
-
-func GetGPUName() string {
-	if HasGPU() {
-		return gpuInfo.GraphicsCards[0].DeviceInfo.Product.Name
-	} else {
-		return "NO GPU"
-	}
-}
-
-func GetHostname() string {
-	if hostInfo == nil {
-		GetHostInfo()
-	}
-	return hostInfo.Hostname
 }
