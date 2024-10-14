@@ -15,7 +15,7 @@ assets/*.url
 
 # pprof (perf testing generated charts as svg)
 heap.svg
-allocs.svgf
+allocs.svg
 
 # Binaries for programs and plugins
 *.exe
