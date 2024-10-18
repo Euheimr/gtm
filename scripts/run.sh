@@ -8,10 +8,11 @@ BINARY_FOLDER="bin"
 # this is a local variable that's set to 1 in case a build was attempted but failed
 build_attempted=0
 
-# Get the current directory of this script and the script name then cd to it
+# Get the current directory of this script
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the script name then cd to it, but go one directory above /scripts
 SCRIPT_NAME=$(basename "$0")
-cd "$DIR"
+cd "$DIR" && cd ..
 
 echo "[$SCRIPT_NAME] CGO_ENABLED=$CGO_ENABLED"
 
