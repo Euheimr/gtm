@@ -57,10 +57,8 @@ build (){
 
   if [[ -f "$BINARY_PATH" ]]; then
     echo "[$SCRIPT_NAME] BUILD SUCCESS !";
-    sleep 2s
   else
     echo "[$SCRIPT_NAME] ERROR: BUILD FAILED to compile !!!"
-    sleep 2s
     exit
   fi
 }
@@ -68,6 +66,7 @@ build (){
 run (){
   if [[ -f "$BINARY_PATH" ]]; then
     echo "[$SCRIPT_NAME] Running binary \`$BINARY_NAME\` at \`$BINARY_FOLDER\` ..."
+    sleep 2s
     "$BINARY_PATH"
   else
     echo "[$SCRIPT_NAME] Could not find binary at \`$BINARY_PATH\` !"
