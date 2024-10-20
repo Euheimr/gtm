@@ -125,6 +125,13 @@ func SetupLayout() (fMain *tview.Flex) {
 	return fMain
 }
 
+func SleepWithTimestampDelta(timestamp time.Time, update time.Duration) {
+	timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
+	if timeDelta < update.Milliseconds() {
+		time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
+	}
+}
+
 func BuildProgressBar(ratio float64, columns int, colorFill string, colorEmpty string) string {
 	var (
 		barUsed       int    = 0

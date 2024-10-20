@@ -10,22 +10,26 @@ import (
 
 func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
-		boxText string
-		w, h    int
+		boxText       string
+		width, height int
 		//isResized bool
 	)
-
+	Layout.Network.SetDynamicColors(true)
 	Layout.Network.SetBorder(showBorder).SetTitle(LblNetwork)
 	slog.Info("Starting `UpdateNetwork()` UI goroutine ...")
 
 	for {
+		timestamp := time.Now()
 
 		time.Sleep(update)
-		w, h, _ = GetInnerBoxSize(Layout.Network.Box, w, h)
+		width, height, _ = GetInnerBoxSize(Layout.Network.Box, width, height)
+
+		boxText = gtm.GetHostname() + "\n" +
+			"col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
+
+		SleepWithTimestampDelta(timestamp, update)
+
 		app.QueueUpdateDraw(func() {
-			// TODO: do draw
-			boxText = gtm.GetHostname() + "\n" +
-				"col: " + strconv.Itoa(w) + ", row: " + strconv.Itoa(h)
 			Layout.Network.SetText(boxText)
 		})
 	}

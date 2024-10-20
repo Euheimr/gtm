@@ -18,9 +18,12 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 	slog.Info("Starting `UpdateDisk()` UI goroutine ...")
 
 	for {
+		timestamp := time.Now()
 		width, height, _ = GetInnerBoxSize(Layout.Disk.Box, width, height)
 
 		time.Sleep(update)
+		SleepWithTimestampDelta(timestamp, update)
+
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
 			boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
