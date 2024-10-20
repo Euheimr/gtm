@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type cpuBox struct {
@@ -25,7 +26,7 @@ type layoutMain struct {
 	Processes *tview.Table
 }
 
-// these constants are text formatting tags used by the tcell package
+// These constants are text formatting tags used by the tcell package
 const (
 	BLACK  string = "[black]"
 	BLUE          = "[blue]"
@@ -36,11 +37,9 @@ const (
 	YELLOW        = "[yellow]"
 )
 
-var barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
-
 const (
-	LblDisk    = " HDD / SSD "
 	LblCPUTemp = " CPU Temp "
+	LblDisk    = " HDD / SSD "
 	LblGPUTemp = " GPU Temp "
 	LblMemory  = " Memory "
 	LblNetwork = " Network "
@@ -48,16 +47,14 @@ const (
 )
 
 var (
-	Layout layoutMain
-	LblCPU = " CPU "
-	LblGPU = " GPU "
+	Layout     *layoutMain
+	Cfg        = &gtm.Cfg
+	barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
 )
-
-var Cfg = &gtm.Cfg
 
 func init() {
 	// Initialize the main Layout ASAP
-	Layout = layoutMain{
+	Layout = &layoutMain{
 		CPU: &cpuBox{
 			Stats: tview.NewTextView(),
 			Temp:  tview.NewTextView(),
