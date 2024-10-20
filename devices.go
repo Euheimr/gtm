@@ -187,24 +187,32 @@ func hasGPU() bool {
 	return false
 }
 
-func (g GPUData) String() string {
+func (g *GPUData) String() string {
 	// NVIDIA always reports memory usage in MiB
 	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
 	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
 
 	//memoryUsageGiB = fmt.Sprintf("%.2f", (g.MemoryUsage/g.MemoryTotal))
 
-	return fmt.Sprintf("#%v, %v%%, %v MiB, %v MiB, %vW, %v°C",
+	return fmt.Sprintf("gfx card #%v, %v%%, %v MiB, %v MiB, %vW, %v°C",
 		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
 }
 
-func (g GPUData) JSON() string {
-	out, err := json.MarshalIndent(g, "", "  ")
-	if err != nil {
-		slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
-		return ""
+func (g *GPUData) JSON(indent bool) string {
+	if indent {
+		out, err := json.MarshalIndent(g, "", "  ")
+		if err != nil {
+			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
+			return ""
+		}
+		return string(out)
+	} else {
+		out, err := json.Marshal(g)
+		if err != nil {
+			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
+		}
+		return string(out)
 	}
-	return string(out)
 }
 
 func GetGPUInfo() []GPUData {
