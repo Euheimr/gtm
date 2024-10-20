@@ -34,7 +34,6 @@ func init() {
 	gtm.GetHostInfo()
 	gtm.GetMemoryInfo()
 	gtm.GetNetworkInfo()
-	gtm.GetSensorsInfo()
 }
 
 func main() {

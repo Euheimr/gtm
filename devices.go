@@ -291,17 +291,3 @@ func GetNetworkInfo() []net.IOCountersStat {
 	}
 	return netInfo
 }
-
-func GetSensorsInfo() []sensors.TemperatureStat {
-	sInfo, err := sensors.SensorsTemperatures()
-	if err != nil {
-		slog.Error("Failed to retrieve sensors.SensorsTemperatures()! " + err.Error())
-	}
-	sensInfo = sInfo
-
-	for i, sensor := range sensInfo {
-		slog.Debug("sensors.SensorsTemperatures(), sensor #" + strconv.Itoa(i) + ": " +
-			sensor.String())
-	}
-	return sensInfo
-}
