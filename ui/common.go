@@ -36,7 +36,7 @@ const (
 	YELLOW        = "[yellow]"
 )
 
-var blockSymbols = [4]string{"░", "▒", "▓", "█"}
+var barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
 
 const (
 	LblDisk    = " HDD / SSD "
@@ -125,44 +125,43 @@ func SetupLayout() (fMain *tview.Flex) {
 	return fMain
 }
 
-func BuildHorizontalTextBar(columns int, ratio float64, color1 string, color2 string) string {
-	// FIXME: rename the color1 / color2 params?
+func BuildProgressBar(ratio float64, columns int, colorFill string, colorEmpty string) string {
 	var (
-		startChar = blockSymbols[3]
-		usedChar  = blockSymbols[3]
-		spaceChar = blockSymbols[0]
-		endChar   = blockSymbols[0]
+		barUsed       int    = 0
+		spacingOffset        = columns   // default the spacing offset to box columns
+		barText       string = colorFill // insert "used" color tag here
+		charUsed             = barSymbols[4]
+		charEmpty            = barSymbols[1]
+		charStart            = barSymbols[4]
+		charEnd              = barSymbols[1]
 	)
-	// if we are color coding, insert the color code tag here for USED
-	barText := color1
-	barText += startChar
-	// We -1 the size of the "used" part of the bar to make room for the first element
-	//	containing the "[" bracket
-	barUsed := int(math.Round(float64(columns)*ratio)) - 1
-	// The spacing offset is the inner width of the box minus the characters representing
-	//	total memory (the bar "|" characters). We -1 here to make room for the matching
-	//	closing "]" bracket (or the last character) for a complete bar
-	spacingOffset := columns - barUsed - 1
 
-	for i := range barUsed {
-
-		// If we aren't on the last element, builds a bar of "used memory"
-		//	ie.  [|||||||    <- like this
-		if i != (barUsed - 1) {
-			barText += usedChar
-		} else {
-			// Add in the second color for the "unused" portion of the bar
-			barText += color2
-			for range spacingOffset {
-				// [||||||||        ] Now add the spacing offset to make a complete bar
-				//         HERE ^
-				barText += spaceChar
-			}
-			barText += endChar
-			// the complete bar should look like:  [||||||||        ] (at 50% load)
-		}
+	if ratio <= 1.0 {
+		// We never want a ratio higher than 1.0 or the bar will overflow to the next line
+		barUsed = int(math.Round(float64(columns) * ratio))
+	} else {
+		barUsed = int(math.Round(float64(columns) * 1.0)) // Clamp the ratio to 1.0
 	}
-	return barText
+
+	if barUsed >= 1 {
+		barText += charStart
+		for i := range barUsed {
+			// If we aren't on the last element, build a bar of "used memory"
+			if i != (barUsed - 1) {
+				barText += charUsed
+			}
+		}
+		spacingOffset -= barUsed
+	}
+	// Add in the second color tag for the empty or "unused" portion of the bar
+	barText += colorEmpty
+
+	for i := 0; i < (spacingOffset - 1); i++ {
+		// Iterate over the spacing offset to fill in the empty/unused part of the bar
+		barText += charEmpty
+	}
+	barText += charEnd // Cap off the end of the bar
+	return barText + WHITE + "\n"
 }
 
 func GetInnerBoxSize(box *tview.Box, oldWidth int, oldHeight int) (width int, height int,
@@ -187,7 +186,11 @@ func InsertCenterSpacing(arg1 string, arg2 string, boxWidth int,
 
 	spacingCount := boxWidth - len(arg1) - len(arg2)
 	for range spacingCount {
-		spaces = spaces + spaceChar
+		spaces += spaceChar
 	}
 	return spaces
+}
+
+func BuildBoxTitleRow(title string, statStr string, boxWidth int, spaceChar string) string {
+	return title + InsertCenterSpacing(title, statStr, boxWidth, spaceChar) + statStr + "\n"
 }
