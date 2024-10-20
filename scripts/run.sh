@@ -10,20 +10,18 @@ build_attempted=0
 
 # Get the current directory of this script
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Get the script name then cd to it, but go one directory above /scripts
+# Get the script name then change dir to scripts/, but then go one directory above scripts/
 SCRIPT_NAME=$(basename "$0")
 cd "$DIR" && cd ..
 
-echo "[$SCRIPT_NAME] CGO_ENABLED=$CGO_ENABLED"
-
-# This is meant to rename the binary with the customary windows .EXE if we are building on windows
-BINARY_POSTFIX=""
+# This is meant to rename the binary with the customary windows .EXE only if we are
+#   building on windows
+binary_postfix=""
 if [[ $OSTYPE == "msys" || $OSTYPE == "cygwin" ]]; then
-  echo "[$SCRIPT_NAME] Operating system is windows... setting binary postfix to \`.exe\` ..."
-  BINARY_POSTFIX=".exe"
+  binary_postfix=".exe"
 fi
 
-BINARY_NAME=$BINARY_NAME$BINARY_POSTFIX
+BINARY_NAME=$BINARY_NAME$binary_postfix
 BINARY_PATH="$BINARY_FOLDER/$BINARY_NAME"
 
 clean () {
@@ -73,7 +71,9 @@ run (){
   fi
 }
 
-####     It's business time!     ####
+################################################################################
+#########################     It's business time!     ##########################
+echo "[$SCRIPT_NAME] CGO_ENABLED=$CGO_ENABLED"
 while [ $# -gt 0 ]; do
   # Process option flags passed to ./run.sh ...
   case $1 in
@@ -83,7 +83,8 @@ while [ $# -gt 0 ]; do
       ;;
     # this is a "catch-all" option flag
     *) echo "[$SCRIPT_NAME] ERROR Invalid Option: \`${1}\`!";
-    echo "[$SCRIPT_NAME] Use \`-b\`, \`build\`, or \`--build\` to force a build. OR \`-c\`, \`clean\`, or \`--clean\` to clear out any binaries in /bin !";
+    echo "[$SCRIPT_NAME] Use \`-b\`, \`build\`, or \`--build\` to force a build.
+      OR \`-c\`, \`clean\`, or \`--clean\` to clear out any binaries in /bin !";
     exit
       ;;
   esac
@@ -101,3 +102,5 @@ else
   run
   fi
 fi
+
+echo ""
