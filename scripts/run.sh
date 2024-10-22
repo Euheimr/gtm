@@ -50,14 +50,13 @@ build (){
   clean
   echo "[$SCRIPT_NAME] Building binary at \`$PWD/$BINARY_PATH\` ..."
   go build -o "$BINARY_PATH" "$MAIN_GO_FOLDER/main.go"
-
   build_attempted=1
 
   if [[ -f "$BINARY_PATH" ]]; then
     echo "[$SCRIPT_NAME] BUILD SUCCESS !";
   else
     echo "[$SCRIPT_NAME] ERROR: BUILD FAILED to compile !!!"
-    exit
+    sleep 10s
   fi
 }
 
