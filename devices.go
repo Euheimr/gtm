@@ -38,6 +38,7 @@ var (
 	netInfo  []net.IOCountersStat
 	sensInfo []sensors.TemperatureStat
 	lastFetchGPU  time.Time
+	lastFetchMem  time.Time
 )
 
 var (
@@ -263,30 +264,35 @@ func GetHostname() string {
 }
 
 func GetMemoryInfo() *mem.VirtualMemoryStat {
+	if time.Since(lastFetchMem) < time.Second && len(memInfo.String()) > 0 {
+		return memInfo
+	}
+
 	mInfo, err := mem.VirtualMemory()
 	if err != nil {
 		slog.Error("Failed to retrieve mem.VirtualMemory()! " + err.Error())
 	}
+	lastFetchMem = time.Now()
 
 	if memInfo == nil {
 		// If this is the first time getting the memory usage, just populate/init memInfo
 		memInfo = mInfo
 		return memInfo
-	} else {
-		currentUsedPercent := mInfo.UsedPercent
-		oldUsedPercent := memInfo.UsedPercent
+	}
 
-		if currentUsedPercent == oldUsedPercent {
-			// If we get the same results, just re-send the same data without updates
-			//slog.Debug("gtm.GetMemoryInfo(): no changes... return last fetch")
-			return memInfo
-		} else {
-			//  If the previous fetch is greater than or less than the last fetch in
-			// 	Gigabytes, return the updated memory usage
-			memInfo = mInfo
-			slog.Debug("mem.VirtualMemory(): " + memInfo.String())
-			return memInfo
-		}
+	oldUsedPercent := memInfo.UsedPercent
+	currentUsedPercent := mInfo.UsedPercent
+
+	if oldUsedPercent == currentUsedPercent {
+		// If we get the same results, just re-send the same data without updates
+		//slog.Debug("gtm.GetMemoryInfo(): no changes... return last fetch")
+		return memInfo
+	} else {
+		//  If the previous fetch is greater than or less than the last fetch in
+		// 	Gigabytes, return the updated memory usage
+		memInfo = mInfo
+		slog.Debug("mem.VirtualMemory(): " + memInfo.String())
+		return memInfo
 	}
 }
 
