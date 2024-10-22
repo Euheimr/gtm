@@ -59,7 +59,7 @@ func main() {
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
 	go ui.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
-	go ui.UpdateCPUTemp(app, false, gtm.Cfg.UpdateInterval)
+	go ui.UpdateCPUTemp(app, true, gtm.Cfg.UpdateInterval)
 	go ui.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
 	if gtm.HasGPU() { //&& runtime.GOOS != "darwin" {
 		slog.Info("Dedicated GPU enabled; setting up GPU & GPUTemp UI " +
