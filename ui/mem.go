@@ -24,7 +24,7 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = GetInnerBoxSize(Layout.Memory.Box, width, height)
+		width, height, isResized = GetInnerBoxSize(Layout.Memory.Box, width, height)
 
 		memInfo = gtm.GetMemoryInfo()
 		/// END DATA FETCH
