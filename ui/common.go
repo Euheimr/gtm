@@ -141,41 +141,40 @@ func SleepWithTimestampDelta(timestamp time.Time, update time.Duration, isResize
 
 func BuildProgressBar(ratio float64, columns int, colorFill string, colorEmpty string) string {
 	var (
-		barUsed       int    = 0
-		spacingOffset        = columns   // default the spacing offset to box columns
-		barText       string = colorFill // insert "used" color tag here
-		charUsed             = barSymbols[4]
-		charEmpty            = barSymbols[1]
-		charStart            = barSymbols[4]
-		charEnd              = barSymbols[1]
+		countFill  int    = 0
+		countEmpty        = columns   // default char count to total box columns
+		barText    string = colorFill // insert "used" color tag here
+		charUsed          = barSymbols[4]
+		charEmpty         = barSymbols[1]
+		charStart         = barSymbols[4]
+		charEnd           = barSymbols[1]
 	)
-
+	// We never want a ratio higher than 1.0 or the bar will overflow to the next line
 	if ratio <= 1.0 {
-		// We never want a ratio higher than 1.0 or the bar will overflow to the next line
-		barUsed = int(math.Round(float64(columns) * ratio))
+		countFill = int(math.Round(float64(columns) * ratio))
 	} else {
-		barUsed = int(math.Round(float64(columns) * 1.0)) // Clamp the ratio to 1.0
+		countFill = int(math.Round(float64(columns) * 1.0)) // Clamp the ratio to 1.0
 	}
 
-	if barUsed >= 1 {
+	if countFill >= 1 {
 		barText += charStart
-		for i := range barUsed {
-			// If we aren't on the last element, build a bar of "used memory"
-			if i != (barUsed - 1) {
+		for i := range countFill {
+			if i != (countFill - 1) {
+				// If we aren't on the last element, build a bar of "used" memory
 				barText += charUsed
 			}
 		}
-		spacingOffset -= barUsed
+		countEmpty -= countFill
 	}
 	// Add in the second color tag for the empty or "unused" portion of the bar
 	barText += colorEmpty
 
-	for i := 0; i < (spacingOffset - 1); i++ {
-		// Iterate over the spacing offset to fill in the empty/unused part of the bar
+	// Iterate over an integer count of empty chars to add in the empty/unused part of
+	//	the bar
+	for i := 0; i < (countEmpty - 1); i++ {
 		barText += charEmpty
 	}
-	barText += charEnd // Cap off the end of the bar
-	return barText + WHITE + "\n"
+	return barText + charEnd + WHITE + "\n" // Cap off the end of the bar and return
 }
 
 func GetInnerBoxSize(box *tview.Box, oldWidth int, oldHeight int) (width int, height int,
