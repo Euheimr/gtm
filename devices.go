@@ -32,7 +32,7 @@ type GPUData struct {
 var (
 	cpuInfo  []cpu.InfoStat
 	diskInfo []disk.PartitionStat
-	//gpuInfo  *[]GPUData
+	gpuInfo  []GPUData
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
