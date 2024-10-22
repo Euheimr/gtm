@@ -103,7 +103,7 @@ func SetupLayout() (fMain *tview.Flex) {
 		AddItem(Layout.Network, 0, 2, false).
 		AddItem(Layout.Disk, 0, 2, false),
 		0, 1, false)
-	if Cfg.EnableGPU && runtime.GOOS != "darwin" {
+	if gtm.HasGPU() {
 		// ROW 2 COLUMN 3
 		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(Layout.GPU, 0, 4, false).

@@ -45,13 +45,10 @@ var (
 )
 
 var (
-	HasGPU    bool
 	GPUVendor string
 )
 
-func init() {
-	HasGPU = hasGPU()
-}
+func init() {}
 
 func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIBIBYTE
@@ -174,7 +171,7 @@ func getGPUNvidiaData() ([]GPUData, error) {
 	return parseGPUNvidiaData(output), nil
 }
 
-func hasGPU() bool {
+func HasGPU() bool {
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
 		GPUVendor = "nvidia"
 		return true
@@ -183,7 +180,7 @@ func hasGPU() bool {
 		GPUVendor = "amd"
 		return true
 	}
-	slog.Error("hasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
+	slog.Error("HasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
 	return false
 }
 

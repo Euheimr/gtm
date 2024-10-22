@@ -61,7 +61,7 @@ func main() {
 	go ui.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
 	go ui.UpdateCPUTemp(app, false, gtm.Cfg.UpdateInterval)
 	go ui.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
-	if gtm.HasGPU { //&& runtime.GOOS != "darwin" {
+	if gtm.HasGPU() { //&& runtime.GOOS != "darwin" {
 		slog.Info("Dedicated GPU enabled; setting up GPU & GPUTemp UI " +
 			"goroutines ...")
 		go ui.UpdateGPU(app, true, gtm.Cfg.UpdateInterval)
