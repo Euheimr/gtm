@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -46,6 +47,8 @@ const (
 const (
 	timeFormat = "[15:04:05.000]"
 )
+
+var opts *slog.HandlerOptions
 
 func colorize(colorCode int, v string) string {
 	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
@@ -204,26 +207,25 @@ func NewHandler(opts *slog.HandlerOptions) *Handler {
 //}
 
 func SetupFileLogging() {
+	var file io.Writer
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		slog.Error("Failed to get current working directory !")
 	}
 	logsDir := filepath.Join(cwd, "log")
 
-	if Cfg.ClearOldLogs {
-		err = os.RemoveAll(logsDir)
-		if err != nil {
+	if Cfg.DeleteOldLogs {
+		if err = os.RemoveAll(logsDir); err != nil {
 			slog.Error("Failed to remove old log files !")
 		}
 	}
 
-	err = os.Mkdir(logsDir, 0750)
-	if err != nil && os.IsNotExist(err) {
+	if err = os.Mkdir(logsDir, 0750); err != nil || os.IsNotExist(err) {
 		slog.Error("Failed to create directory: " + logsDir + " !")
 	}
 
-	err = os.Chdir(logsDir)
-	if err != nil {
+	if err = os.Chdir(logsDir); err != nil {
 		slog.Error("Failed to change directory: " + logsDir)
 	}
 
@@ -232,15 +234,27 @@ func SetupFileLogging() {
 	timestampString = strings.ReplaceAll(timestampString, " ", "_")
 
 	logFilepath := filepath.Join(logsDir, timestampString+".log")
-	file, err := os.Create(logFilepath)
-	if err != nil {
+
+	if file, err = os.Create(logFilepath); err != nil {
 		slog.Error("Failed to create log file at " + logFilepath + " !")
 	}
 
-	opts := &slog.HandlerOptions{
-		AddSource: false,
-		Level:     slog.LevelDebug,
-		//ReplaceAttr: nil,
+	if Cfg.Debug && Cfg.TraceFunctionLogging {
+		opts = &slog.HandlerOptions{
+			AddSource: true,
+			Level:     slog.LevelDebug,
+			//ReplaceAttr: nil,
+		}
+	} else if Cfg.Debug {
+		opts = &slog.HandlerOptions{
+			AddSource: false,
+			Level:     slog.LevelDebug,
+		}
+	} else {
+		opts = &slog.HandlerOptions{
+			AddSource: false,
+			Level:     slog.LevelInfo,
+		}
 	}
 
 	fileHandler := slog.NewJSONHandler(file, opts)

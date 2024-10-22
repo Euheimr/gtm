@@ -9,12 +9,13 @@ import (
 )
 
 type ConfigVars struct {
-	Debug          bool
-	Production     bool
-	ClearOldLogs   bool
-	UpdateInterval time.Duration
-	Celsius        bool
-	EnableGPU      bool
+	Debug                bool
+	Production           bool
+	DeleteOldLogs        bool
+	TraceFunctionLogging bool
+	UpdateInterval       time.Duration
+	Celsius              bool
+	EnableGPU            bool
 }
 
 var Cfg ConfigVars
@@ -30,27 +31,23 @@ func readConfig() {
 	}
 
 	DEBUG, err := strconv.ParseBool(os.Getenv("DEBUG"))
-	PRODUCTION, err := strconv.ParseBool(os.Getenv("PRODUCTION"))
-	CLEAR_OLD_LOGS, err := strconv.ParseBool(os.Getenv("CLEAR_OLD_LOGS"))
-	UPDATE_INTERVAL, err := strconv.ParseInt(os.Getenv("UPDATE_INTERVAL"), 10, 32)
+	DELETE_OLD_LOGS, err := strconv.ParseBool(os.Getenv("DELETE_OLD_LOGS"))
+	TRACE_FUNCTION_LOGGING, err := strconv.ParseBool(os.Getenv("TRACE_FUNCTION_LOGGING"))
+	UPDATE_INTERVAL, err := strconv.ParseInt(os.Getenv("UPDATE_INTERVAL"), 10, 64)
 	CELSIUS, err := strconv.ParseBool(os.Getenv("CELSIUS"))
-	ENABLE_GPU, err := strconv.ParseBool(os.Getenv("ENABLE_GPU"))
 
 	Cfg = ConfigVars{
-		Debug:          DEBUG,
-		Production:     PRODUCTION,
-		ClearOldLogs:   CLEAR_OLD_LOGS,
-		UpdateInterval: time.Duration(UPDATE_INTERVAL) * time.Millisecond,
-		Celsius:        CELSIUS,
-		EnableGPU:      ENABLE_GPU,
+		Debug:                DEBUG,
+		DeleteOldLogs:        DELETE_OLD_LOGS,
+		TraceFunctionLogging: TRACE_FUNCTION_LOGGING,
+		UpdateInterval:       time.Duration(UPDATE_INTERVAL) * time.Millisecond,
+		Celsius:              CELSIUS,
 	}
 
 	if Cfg.Debug {
-		slog.Debug("DEBUG=" + os.Getenv("DEBUG"))
-		slog.Debug("PRODUCTION=" + os.Getenv("PRODUCTION"))
-		slog.Debug("CLEAR_OLD_LOGS=" + os.Getenv("CLEAR_OLD_LOGS"))
+		slog.Debug("DELETE_OLD_LOGS=" + os.Getenv("DELETE_OLD_LOGS"))
+		slog.Debug("TRACE_FUNCTION_LOGGING=" + os.Getenv("TRACE_FUNCTION_LOGGING"))
 		slog.Debug("UPDATE_INTERVAL=" + os.Getenv("UPDATE_INTERVAL") + "ms")
 		slog.Debug("CELSIUS=" + os.Getenv("CELSIUS"))
-		slog.Debug("ENABLE_GPU=" + os.Getenv("ENABLE_GPU"))
 	}
 }
