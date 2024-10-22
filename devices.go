@@ -14,13 +14,14 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const GIBIBYTE = 1_073_741_824 // binary base 2^30 or 1024^3
 //const GIGABYTE = 1_000_000_000 // base 10^9
 
 type GPUData struct {
-	Id          int32   `json:"id"`
+	Id          int32   `json:"card-id"`
 	Load        float64 `json:"load"`
 	MemoryUsage float64 `json:"memoryUsage"`
 	MemoryTotal float64 `json:"memoryTotal"`
@@ -36,6 +37,7 @@ var (
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
 	sensInfo []sensors.TemperatureStat
+	lastFetchGPU  time.Time
 )
 
 var (
@@ -44,9 +46,7 @@ var (
 	gpuName      string
 )
 
-var (
-	GPUVendor string
-)
+var GPUVendor string
 
 func init() {}
 
@@ -213,17 +213,23 @@ func (g *GPUData) JSON(indent bool) string {
 }
 
 func GetGPUInfo() []GPUData {
-	if HasGPU {
+	if HasGPU() {
+		// Limit getting device data to just once a second, and NOT with every UI update
+		if time.Since(lastFetchGPU) <= time.Second && len(gpuInfo) > 0 {
+			return gpuInfo
+		}
+
 		switch GPUVendor {
 		case "nvidia":
 			data, err := getGPUNvidiaData()
 			if err != nil {
 				slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " + err.Error())
 			}
-			lastDataStat := data[len(data)-1]
-			slog.Debug(lastDataStat.String())
-			return data
+			gpuInfo = data
+			lastFetchGPU = time.Now()
 
+			//slog.Debug(data[len(data)-1].String())
+			return data
 		case "amd":
 			// TODO: write rocm-smi code for AMD gpu detection and data parsing
 			slog.Error("AMD GPU not implemented yet !")
