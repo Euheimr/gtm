@@ -14,7 +14,7 @@ func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized     bool
 	)
 	Layout.GPU.SetDynamicColors(true)
 	Layout.GPU.SetBorder(showBorder).SetTitle(" " + gtm.GetGPUName() + " ")
@@ -39,7 +39,7 @@ func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 		boxText += "\n" // add an extra line gap to visually and obviously separate the info
 		boxText += gpuMemoryTitleRow + BuildProgressBar(gpuMemoryUsageRatio, width, GREEN, WHITE)
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			Layout.GPU.SetText(boxText)
@@ -51,7 +51,7 @@ func UpdateGPUTemp(app *tview.Application, showBorder bool, update time.Duration
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized     bool
 	)
 
 	Layout.GPUTemp.SetDynamicColors(true)
@@ -72,7 +72,7 @@ func UpdateGPUTemp(app *tview.Application, showBorder bool, update time.Duration
 		boxText = gpuTempTitle + BuildProgressBar(
 			float64(gpuData[lastElement].Temperature)/100.0, width, GREEN, WHITE)
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			Layout.GPUTemp.SetText(boxText)

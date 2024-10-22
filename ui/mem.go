@@ -15,7 +15,7 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 	var (
 		boxText       string
 		width, height int
-		//isResized     bool
+		isResized     bool
 	)
 
 	Layout.Memory.SetDynamicColors(true)
@@ -41,7 +41,7 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 
 		boxText = memoryUsedTitleRow + progressBar + memoryStatsRow
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw

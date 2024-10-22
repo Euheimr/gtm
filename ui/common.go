@@ -5,7 +5,6 @@ import (
 	"gtm"
 	"log/slog"
 	"math"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -122,10 +121,21 @@ func SetupLayout() (fMain *tview.Flex) {
 	return fMain
 }
 
-func SleepWithTimestampDelta(timestamp time.Time, update time.Duration) {
-	timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
-	if timeDelta < update.Milliseconds() {
-		time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
+func SleepWithTimestampDelta(timestamp time.Time, update time.Duration, isResized bool) {
+	if isResized {
+		// When the window/box primitive is resized, refresh the window info ASAP
+		//slog.Debug("sleep SKIP")
+		time.Sleep(0)
+	} else {
+		// Only sleep window refresh/updates when the window is NOT resized.
+		timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
+		if timeDelta == 0 {
+			//slog.Debug("sleep update = " + strconv.Itoa(int(update.Milliseconds())))
+			time.Sleep(update)
+		} else if timeDelta < update.Milliseconds() {
+			//slog.Debug("sleep timeDelta = " + strconv.Itoa(int(update.Milliseconds()-timeDelta)))
+			time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
+		}
 	}
 }
 

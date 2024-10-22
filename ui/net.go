@@ -12,7 +12,7 @@ func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized     bool
 	)
 	Layout.Network.SetDynamicColors(true)
 	Layout.Network.SetBorder(showBorder).SetTitle(LblNetwork)
@@ -27,7 +27,7 @@ func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration
 		boxText = gtm.GetHostname() + "\n" +
 			"col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			Layout.Network.SetText(boxText)

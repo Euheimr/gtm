@@ -10,7 +10,7 @@ func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized     bool
 	)
 	Layout.CPU.Stats.SetDynamicColors(true)
 	Layout.CPU.Stats.SetBorder(showBorder)
@@ -18,13 +18,13 @@ func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = GetInnerBoxSize(Layout.CPU.Stats.Box, width, height)
+		width, height, isResized = GetInnerBoxSize(Layout.CPU.Stats.Box, width, height)
 
 		// TODO: use 2 boxes as columns (side-by-side) to display a graph and stats
 		// 	(in that order)
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			Layout.CPU.Stats.SetText(boxText)
@@ -36,7 +36,7 @@ func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized     bool
 	)
 	Layout.CPU.Temp.SetDynamicColors(true)
 	Layout.CPU.Temp.SetBorder(showBorder).SetTitle(LblCPUTemp)
@@ -48,7 +48,7 @@ func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
-		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			Layout.CPU.Temp.SetText(boxText)

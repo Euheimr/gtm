@@ -11,7 +11,7 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
-		//isResized bool
+		isResized       bool
 	)
 
 	Layout.Disk.SetBorder(showBorder).SetTitle(LblDisk)
@@ -23,6 +23,7 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 
 		time.Sleep(update)
 		SleepWithTimestampDelta(timestamp, update)
+		SleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
