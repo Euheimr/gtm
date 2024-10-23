@@ -38,6 +38,7 @@ func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration
 		width, height int
 		isResized     bool
 	)
+
 	Layout.CPU.Temp.SetDynamicColors(true)
 	Layout.CPU.Temp.SetBorder(showBorder).SetTitle(LblCPUTemp)
 	slog.Info("Starting `UpdateCPUTemp()` UI goroutine ...")

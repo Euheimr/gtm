@@ -16,6 +16,7 @@ func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 		width, height int
 		isResized     bool
 	)
+
 	Layout.GPU.SetDynamicColors(true)
 	Layout.GPU.SetBorder(showBorder).SetTitle(" " + gtm.GetGPUName() + " ")
 	slog.Info("Starting `UpdateGPU()` UI goroutine ...")

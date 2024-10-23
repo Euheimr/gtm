@@ -7,6 +7,7 @@ import (
 )
 
 func UpdateProcesses(app *tview.Application, showBorder bool, update time.Duration) {
+
 	Layout.Processes.SetBorder(showBorder).SetTitle(LblProc)
 	slog.Info("Starting `UpdateProcesses()` UI goroutine ...")
 
@@ -16,7 +17,6 @@ func UpdateProcesses(app *tview.Application, showBorder bool, update time.Durati
 
 		time.Sleep(update)
 		app.QueueUpdateDraw(func() {
-			// TODO: do draw
 
 		})
 	}

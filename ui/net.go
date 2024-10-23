@@ -14,6 +14,7 @@ func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration
 		width, height int
 		isResized     bool
 	)
+
 	Layout.Network.SetDynamicColors(true)
 	Layout.Network.SetBorder(showBorder).SetTitle(LblNetwork)
 	slog.Info("Starting `UpdateNetwork()` UI goroutine ...")
