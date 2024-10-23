@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 )
 
 var fMain *tview.Flex
@@ -71,10 +72,8 @@ func main() {
 	go ui.UpdateNetwork(app, true, gtm.Cfg.UpdateInterval)
 	go ui.UpdateProcesses(app, true, gtm.Cfg.UpdateInterval)
 
-	// TODO: REMOVE ME - this is for testing
-	//delay := time.Duration(5)
-	//fmt.Printf("[main.go] Starting app in %d seconds...\n", delay)
-	//time.Sleep(delay * time.Second)
+	slog.Info("Waiting for goroutines to start up ...")
+	time.Sleep(40 * time.Millisecond) // wait to start up all the goroutines
 
 	// START APP
 	slog.Info("Starting the app ...")
