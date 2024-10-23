@@ -30,7 +30,6 @@ func init() {
 
 	// Seed the initial values & data before setting up the rest of the app
 	gtm.GetCPUInfo()
-	gtm.GetDiskInfo()
 	gtm.GetGPUInfo()
 	gtm.GetHostInfo()
 	gtm.GetMemoryInfo()

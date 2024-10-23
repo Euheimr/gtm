@@ -8,17 +8,44 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
-	"github.com/shirou/gopsutil/v4/sensors"
+	"golang.org/x/sys/windows"
 	"log/slog"
 	"math"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// GIBIBYTE is the binary representation of gigabyte
 const GIBIBYTE = 1_073_741_824 // binary base 2^30 or 1024^3
-//const GIGABYTE = 1_000_000_000 // base 10^9
+const GIGABYTE = 1_000_000_000 // decimal base 10^9
+
+type FileSystemType int
+
+const (
+	APFS FileSystemType = iota
+	exFAT
+	FAT
+	FAT32
+	EXT
+	EXT2
+	EXT3
+	EXT4
+	NTFS
+	JFS
+	ZFS
+)
+
+type DiskInfo struct {
+	FSType        FileSystemType `json:"fstype"`
+	IsVirtualDisk bool           `json:"is_virtual_disk"`
+	Free          uint64         `json:"free"`
+	Used          uint64         `json:"used"`
+	UsedPercent   uint64         `json:"used_percent"`
+	Total         uint64         `json:"total"`
+}
 
 type GPUData struct {
 	Id          int32   `json:"card-id"`
@@ -30,15 +57,24 @@ type GPUData struct {
 }
 
 var (
-	cpuInfo  []cpu.InfoStat
-	diskInfo []disk.PartitionStat
-	gpuInfo  []GPUData
-	hostInfo *host.InfoStat
-	memInfo  *mem.VirtualMemoryStat
-	netInfo  []net.IOCountersStat
-	sensInfo []sensors.TemperatureStat
+	cpuInfo []cpu.InfoStat
+	//diskInfo []DiskInfo
+	diskInfo  []disk.PartitionStat
+	diskUsage disk.UsageStat
+	gpuInfo   []GPUData
+	hostInfo  *host.InfoStat
+	memInfo   *mem.VirtualMemoryStat
+	netInfo   []net.IOCountersStat
+)
+
+var (
+	lastFetchCPU  time.Time
+	lastFetchDisk time.Time
 	lastFetchGPU  time.Time
+	lastFetchHost time.Time
 	lastFetchMem  time.Time
+	lastFetchNet  time.Time
+	lastFetchProc time.Time
 )
 
 var (
@@ -95,6 +131,8 @@ func GetDiskInfo() []disk.PartitionStat {
 	if err != nil {
 		slog.Error("Failed to retrieve disk.Partitions()! " + err.Error())
 	}
+	// FIXME: diskInfo as new var might be redundant?
+
 	diskInfo = dInfo
 	slog.Debug("disk.Partitions(): physical disk count = " + strconv.Itoa(len(diskInfo)))
 	for i, dsk := range diskInfo {
@@ -103,73 +141,65 @@ func GetDiskInfo() []disk.PartitionStat {
 	return diskInfo
 }
 
-func parseGPUNvidiaData(output []byte) []GPUData {
-	var gpuData []GPUData
-
-	info := strings.Split(string(output), "\n")
-	for _, line := range info {
-		if line != "" {
-			data := strings.Split(line, ", ")
-			gpuName = data[1]
-
-			id, err := strconv.ParseInt(data[0], 10, 32)
-			if err != nil {
-				slog.Error("Failed to parse GPU Id from string -> int ! " + err.Error())
-			}
-
-			load, err := strconv.ParseInt(data[2], 10, 32)
-			if err != nil {
-				slog.Error("Failed to parse GPU Load from string -> int ! " + err.Error())
-			}
-
-			memoryUsage, err := strconv.ParseFloat(data[3], 64)
-			if err != nil {
-				slog.Error("Failed to parse float: memory.usage !" + err.Error())
-				memoryUsage = 0.0
-			}
-			memoryTotal, err := strconv.ParseFloat(data[4], 64)
-			if err != nil {
-				slog.Error("Failed to parse float: memory.total !" + err.Error())
-				memoryTotal = 0.0
-			}
-
-			power, err := strconv.ParseFloat(data[5], 64)
-			if err != nil {
-				slog.Error("Failed to parse float: power !" + err.Error())
-			}
-
-			t := strings.ReplaceAll(data[6], "\r", "")
-			temp, err := strconv.ParseInt(t, 10, 32)
-			if err != nil {
-				slog.Error("Failed to parse float: temp !" + err.Error())
-			}
-
-			gpu := GPUData{
-				Id:          int32(id),
-				Load:        float64(load) / 100,
-				MemoryUsage: memoryUsage,
-				MemoryTotal: memoryTotal,
-				Power:       power,
-				// on windows, there's a carriage return on the last stat
-				Temperature: int32(temp),
-			}
-			gpuData = append(gpuData, gpu)
-		}
+func GetDiskUsage(path string) (disk.UsageStat, error) {
+	if len(diskUsage.String()) > 0 && time.Since(lastFetchDisk) < time.Hour {
+		return diskUsage, nil
 	}
-	return gpuData
+
+	dUsage, err := disk.Usage(path)
+	if err != nil {
+		slog.Error("Failed to retrieve disk.Usage(" + path + ")! " + err.Error())
+		return disk.UsageStat{}, err
+	}
+	slog.Debug("disk.Usage(" + path + "): " + dUsage.String())
+	diskUsage = *dUsage
+	lastFetchDisk = time.Now()
+	return diskUsage, err
 }
 
-func getGPUNvidiaData() ([]GPUData, error) {
-	cmd := exec.Command("nvidia-smi",
-		"--query-gpu=index,name,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu",
-		"--format=csv,noheader,nounits")
+func IsVirtualDisk(path string) bool {
+	switch runtime.GOOS {
+	case "windows":
+		d, err := windows.UTF16PtrFromString(path)
+		if err != nil {
+			slog.Error("Failed to get UTF16 pointer from string: " + path + "! " + err.Error())
+		}
+		driveType := windows.GetDriveType(d)
+		//slog.Debug("drive " + path + ", type=" + strconv.FormatUint(uint64(driveType), 10))
 
-	output, err := cmd.Output()
-	if err != nil {
-		slog.Error("Failed to get nvidia-smi output! " + err.Error())
-		return nil, err
+		// 2: DRIVE_REMOVABLE 3: DRIVE_FIXED 4: DRIVE_REMOTE 5: DRIVE_CDROM 6: DRIVE_RAMDISK
+		switch driveType {
+		case windows.DRIVE_RAMDISK:
+			slog.Debug(path + " is a RAMDISK")
+			return true
+		case windows.DRIVE_FIXED:
+			// disk.IOCounters(C:) ALWAYS errors out on Windows, BUT we do not get an
+			//	empty struct on a valid DRIVE_FIXED device
+			io, _ := disk.IOCounters(path)
+			switch len(io) {
+			case 0:
+				// This is a VERY hacky way of working around detecting Google Drive.
+				//	GDrive is seen as a "real" drive in Windows for some reason, and not
+				//	as a RAMDISK (Virtual Hard Disk; aka. VHD).
+				// But if we try to call disk.IOCounters() on it, we will just get an
+				//	empty struct (length of 0) back, which indicates it IS a RAMDISK. This
+				//  is the only way I've been able to detect a mounted Google Drive :(
+				slog.Debug("drive " + path + " IS a RAMDISK")
+				return true
+			default:
+				// Any other case that is len(io) > 0 means it is not a RAMDISK
+				slog.Debug("disk.IOCounters(" + path + "): " + io[path].String())
+				return false
+			}
+		default:
+			slog.Debug(path + " is not a RAMDISK")
+			return false
+		}
+	default:
+		// TODO: do RAMDISK checks for macOS & Linux !
+		slog.Debug("Not on windows... ignoring RAMDISK check ...")
+		return false
 	}
-	return parseGPUNvidiaData(output), nil
 }
 
 func HasGPU() bool {
@@ -200,8 +230,7 @@ func (g *GPUData) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
-			return ""
+			slog.Error("Failed to marshal indent JSON from struct GPUData{} ! " + err.Error())
 		}
 		return string(out)
 	} else {
@@ -213,29 +242,91 @@ func (g *GPUData) JSON(indent bool) string {
 	}
 }
 
-func GetGPUInfo() []GPUData {
-	if HasGPU() {
-		// Limit getting device data to just once a second, and NOT with every UI update
-		if time.Since(lastFetchGPU) <= time.Second && len(gpuInfo) > 0 {
-			return gpuInfo
-		}
+func parseGPUNvidiaData(output []byte) []GPUData {
+	var gpuData []GPUData
+	var (
+		id          int64
+		load        int64
+		memoryUsage float64
+		memoryTotal float64
+		power       float64
+		temp        int64
+		err         error
+	)
 
-		switch GPUVendor {
-		case "nvidia":
-			data, err := getGPUNvidiaData()
-			if err != nil {
-				slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " + err.Error())
+	info := strings.Split(string(output), "\n")
+	for _, line := range info {
+		if line != "" {
+			data := strings.Split(line, ", ")
+			gpuName = data[1]
+
+			if id, err = strconv.ParseInt(data[0], 10, 32); err != nil {
+				slog.Error("Failed to parse GPU Id from string -> int ! " + err.Error())
 			}
-			gpuInfo = data
-			lastFetchGPU = time.Now()
+			if load, err = strconv.ParseInt(data[2], 10, 32); err != nil {
+				slog.Error("Failed to parse GPU Load from string -> int ! " + err.Error())
+			}
+			if memoryUsage, err = strconv.ParseFloat(data[3], 64); err != nil {
+				slog.Error("Failed to parse float: memory.usage !" + err.Error())
+				memoryUsage = 0.0
+			}
+			if memoryTotal, err = strconv.ParseFloat(data[4], 64); err != nil {
+				slog.Error("Failed to parse float: memory.total !" + err.Error())
+				memoryTotal = 0.0
+			}
+			if power, err = strconv.ParseFloat(data[5], 64); err != nil {
+				slog.Error("Failed to parse float: power !" + err.Error())
+			}
 
-			//slog.Debug(data[len(data)-1].String())
-			return data
-		case "amd":
-			// TODO: write rocm-smi code for AMD gpu detection and data parsing
-			slog.Error("AMD GPU not implemented yet !")
+			// on windows, there's a carriage return on the last stat
+			t := strings.ReplaceAll(data[6], "\r", "")
+			if temp, err = strconv.ParseInt(t, 10, 32); err != nil {
+				slog.Error("Failed to parse float: temp !" + err.Error())
+			}
+
+			gpu := GPUData{
+				Id:          int32(id),
+				Load:        float64(load) / 100,
+				MemoryUsage: memoryUsage,
+				MemoryTotal: memoryTotal,
+				Power:       power,
+				Temperature: int32(temp),
+			}
+			gpuData = append(gpuData, gpu)
+		}
+	}
+	return gpuData
+}
+
+func GetGPUInfo() []GPUData {
+	if !HasGPU() {
+		return nil
+	}
+
+	// Limit getting device data to just once a second, and NOT with every UI update
+	if time.Since(lastFetchGPU) <= time.Second && len(gpuInfo) > 0 {
+		return gpuInfo
+	}
+
+	switch GPUVendor {
+	case "nvidia":
+		cmd := exec.Command(
+			"nvidia-smi",
+			"--query-gpu=index,name,utilization.gpu,memory.used,memory.total,"+
+				"power.draw,temperature.gpu",
+			"--format=csv,noheader,nounits")
+		data, err := cmd.Output()
+		if err != nil {
+			slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " + err.Error())
 			return nil
 		}
+		//slog.Debug(data[len(data)-1].String())
+		gpuInfo = parseGPUNvidiaData(data)
+		lastFetchGPU = time.Now()
+		return gpuInfo
+	case "amd":
+		// TODO: write rocm-smi code for AMD gpu detection and data parsing
+		slog.Error("AMD GPU not implemented yet !")
 	}
 	return nil
 }
