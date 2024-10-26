@@ -86,7 +86,13 @@ var (
 	hostname     string
 )
 
-func init() {}
+func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
+	result = float64(bytes) / GIGABYTE
+	if rounded {
+		return math.RoundToEven(result)
+	}
+	return result
+}
 
 func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIBIBYTE
