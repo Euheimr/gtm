@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var gpuData []gtm.GPUData
+var gpuData []gtm.GPUInfo
 
 func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 	var (
