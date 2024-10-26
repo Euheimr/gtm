@@ -381,14 +381,20 @@ func GetGPUInfo() []GPUInfo {
 func GetGPUName() string { return gpuName }
 
 func GetHostInfo() *host.InfoStat {
+	if time.Since(lastFetchHost) < time.Second && len(hostInfo.String()) > 0 {
+		return hostInfo
+	}
+
 	hInfo, err := host.Info()
 	if err != nil {
 		slog.Error("Failed to retrieve host.Info()! " + err.Error())
 	}
+
 	hostInfo = hInfo
 	slog.Debug("host.Info(): " + hostInfo.String())
-
 	hostname = hostInfo.Hostname
+
+	lastFetchHost = time.Now()
 	return hostInfo
 }
 
