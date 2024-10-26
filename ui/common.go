@@ -46,9 +46,10 @@ const (
 )
 
 var (
-	Layout     *layoutMain
-	Cfg        = &gtm.Cfg
-	barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
+	Layout      *layoutMain
+	Cfg         = &gtm.Cfg
+	barSymbols  = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
+	treeSymbols = [4]string{"│", "├", "─", "└"}
 )
 
 func init() {
