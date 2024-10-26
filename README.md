@@ -99,12 +99,17 @@ Otherwise, it compiles a new binary for your system and then runs it for you.
    1. `Powershell` or `wt` (Windows)
    2. `BASH` or `zsh` (Linux/macOS)
 3. `cd <PROJECT DIRECTORY>` (ie. `cd ~/Downloads/gtm`)
-4. `sh ./run.sh`
+4. `sh ./scripts/run.sh`
 
-You may force a build _even if a binary exists_ by running:
+You may force a build & run the executable _even if a binary exists_ by running:
 
-  `sh ./run.sh build` or 
-  `sh ./run.sh -b`
+  `sh ./scripts/run.sh build` or 
+  `sh ./scripts/run.sh -b`
+
+You may also force a build and NOT run the executable by running:
+
+  `sh ./scripts/run.sh build-only` or
+  `sh ./scripts/run.sh -bo`
 
 
 ### TODO
