@@ -49,7 +49,7 @@ type DiskInfo struct {
 	Total         uint64         `json:"total"`
 }
 
-type GPUData struct {
+type GPUInfo struct {
 	Id          int32   `json:"card-id"`
 	Load        float64 `json:"load"`
 	MemoryUsage float64 `json:"memoryUsage"`
@@ -63,7 +63,7 @@ var (
 	diskInfo []DiskInfo
 	gpuInfo  []GPUInfo
 	hostInfo *host.InfoStat
-	gpuInfo   []GPUData
+	memInfo  *mem.VirtualMemoryStat
 	hostInfo  *host.InfoStat
 	memInfo   *mem.VirtualMemoryStat
 	netInfo   []net.IOCountersStat
@@ -81,11 +81,10 @@ var (
 
 var (
 	cpuModelName string
-	hostname     string
 	gpuName      string
+	gpuVendor    string
+	hostname     string
 )
-
-var GPUVendor string
 
 func init() {}
 
@@ -246,18 +245,18 @@ func GetDiskInfo() []DiskInfo {
 
 func HasGPU() bool {
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
-		GPUVendor = "nvidia"
+		gpuVendor = "nvidia"
 		return true
 	}
 	if err := exec.Command("rocm-smi").Run(); err == nil {
-		GPUVendor = "amd"
+		gpuVendor = "amd"
 		return true
 	}
 	slog.Error("HasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
 	return false
 }
 
-func (g *GPUData) String() string {
+func (g *GPUInfo) String() string {
 	// NVIDIA always reports memory usage in MiB
 	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
 	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
@@ -268,24 +267,24 @@ func (g *GPUData) String() string {
 		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
 }
 
-func (g *GPUData) JSON(indent bool) string {
+func (g *GPUInfo) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal indent JSON from struct GPUData{} ! " + err.Error())
+			slog.Error("Failed to marshal indent JSON from struct GPUInfo{} ! " + err.Error())
 		}
 		return string(out)
 	} else {
 		out, err := json.Marshal(g)
 		if err != nil {
-			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
+			slog.Error("Failed to marshal JSON from struct GPUInfo{} ! " + err.Error())
 		}
 		return string(out)
 	}
 }
 
-func parseGPUNvidiaData(output []byte) []GPUData {
-	var gpuData []GPUData
+func parseGPUNvidiaData(output []byte) []GPUInfo {
+	var gpuData []GPUInfo
 	var (
 		id          int64
 		load        int64
@@ -326,7 +325,7 @@ func parseGPUNvidiaData(output []byte) []GPUData {
 				slog.Error("Failed to parse float: temp !" + err.Error())
 			}
 
-			gpu := GPUData{
+			gpu := GPUInfo{
 				Id:          int32(id),
 				Load:        float64(load) / 100,
 				MemoryUsage: memoryUsage,
@@ -340,7 +339,7 @@ func parseGPUNvidiaData(output []byte) []GPUData {
 	return gpuData
 }
 
-func GetGPUInfo() []GPUData {
+func GetGPUInfo() []GPUInfo {
 	if !HasGPU() {
 		return nil
 	}
@@ -350,7 +349,7 @@ func GetGPUInfo() []GPUData {
 		return gpuInfo
 	}
 
-	switch GPUVendor {
+	switch gpuVendor {
 	case "nvidia":
 		cmd := exec.Command(
 			"nvidia-smi",
@@ -369,6 +368,7 @@ func GetGPUInfo() []GPUData {
 	case "amd":
 		// TODO: write rocm-smi code for AMD gpu detection and data parsing
 		slog.Error("AMD GPU not implemented yet !")
+		lastFetchGPU = time.Now()
 	}
 	return nil
 }
