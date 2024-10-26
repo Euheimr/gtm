@@ -80,10 +80,16 @@ while [ $# -gt 0 ]; do
       ;;
     -c | clean | --clean ) clean; exit;
       ;;
+    -bo | build-only | --build-only ) build;
+       echo "[$SCRIPT_NAME] Build done, exiting ...";
+       exit;
+      ;;
     # this is a "catch-all" option flag
-    *) echo "[$SCRIPT_NAME] ERROR Invalid Option: \`${1}\`!";
-    echo "[$SCRIPT_NAME] Use \`-b\`, \`build\`, or \`--build\` to force a build.
-      OR \`-c\`, \`clean\`, or \`--clean\` to clear out any binaries in /bin !";
+    *) echo "[$SCRIPT_NAME] ERROR Invalid Option flag: ${1}";
+       echo "[$SCRIPT_NAME] Use the following flags:";
+       echo "    Force a Build & Run the executable with: --build, build, or -b";
+       echo "    Force ONLY a build (DO NOT run $BINARY_NAME): --build-only, build-only, or -bo";
+       echo "    Delete any binaries in /bin with: --clean, clean, or -c";
     exit
       ;;
   esac
