@@ -21,12 +21,18 @@ func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration
 
 	for {
 		timestamp := time.Now()
-
-		time.Sleep(update)
 		width, height, _ = GetInnerBoxSize(Layout.Network.Box, width, height)
 
-		boxText = gtm.GetHostname() + "\n" +
-			"col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
+		netInfo := gtm.GetNetworkInfo()
+
+		boxText = gtm.GetHostname() + "\n"
+		//boxText += "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
+		for _, iface := range netInfo {
+			boxText += BuildBoxTitleRow(
+				"DOWN: ", strconv.FormatUint(iface.BytesSent, 10), width, " ")
+			boxText += BuildBoxTitleRow(
+				"UP: ", strconv.FormatUint(iface.BytesRecv, 10), width, " ")
+		}
 
 		SleepWithTimestampDelta(timestamp, update, isResized)
 
