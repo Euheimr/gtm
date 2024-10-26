@@ -15,7 +15,11 @@ import (
 var fMain *tview.Flex
 
 func init() {
-	// Logging will not work as expected unless we set it first before ANYTHING
+	// Read the `.env` config before logging and anything else
+	gtm.ReadConfig()
+
+	// Logging will not work as expected unless we set it first, but only after reading
+	//	`.env` config
 	gtm.SetupFileLogging()
 
 	if gtm.Cfg.Debug {

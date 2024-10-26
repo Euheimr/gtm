@@ -44,11 +44,7 @@ const (
 	white = 97
 )
 
-const (
-	timeFormat = "[15:04:05.000]"
-)
-
-var opts *slog.HandlerOptions
+const TIME_FORMAT = "[15:04:05.000]"
 
 func colorize(colorCode int, v string) string {
 	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
@@ -105,7 +101,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	fmt.Println(
-		colorize(lightGray, r.Time.Format(timeFormat)),
+		colorize(lightGray, r.Time.Format(TIME_FORMAT)),
 		level,
 		colorize(white, r.Message),
 		colorize(darkGray, string(b)),
@@ -207,7 +203,29 @@ func NewHandler(opts *slog.HandlerOptions) *Handler {
 //}
 
 func SetupFileLogging() {
-	var file io.Writer
+	var (
+		file        io.Writer
+		opts        *slog.HandlerOptions
+		logLevelStr string
+	)
+
+	if Cfg.Debug && Cfg.TraceFunctionLogging {
+		opts = &slog.HandlerOptions{
+			AddSource: true,
+			Level:     slog.LevelDebug,
+			//ReplaceAttr: nil,
+		}
+	} else if Cfg.Debug {
+		opts = &slog.HandlerOptions{
+			AddSource: false,
+			Level:     slog.LevelDebug,
+		}
+	} else {
+		opts = &slog.HandlerOptions{
+			AddSource: false,
+			Level:     slog.LevelInfo,
+		}
+	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -233,28 +251,22 @@ func SetupFileLogging() {
 	timestampString := strings.ReplaceAll(timestamp, ":", ".")
 	timestampString = strings.ReplaceAll(timestampString, " ", "_")
 
-	logFilepath := filepath.Join(logsDir, timestampString+".log")
+	switch opts.Level {
+	case slog.LevelDebug:
+		logLevelStr = "debug"
+	case slog.LevelInfo:
+		logLevelStr = "info"
+	case slog.LevelWarn:
+		logLevelStr = "warn"
+	case slog.LevelError:
+		logLevelStr = "error"
+	default:
+		logLevelStr = "info"
+	}
+	logFilepath := filepath.Join(logsDir, timestampString+"_"+logLevelStr+".log")
 
 	if file, err = os.Create(logFilepath); err != nil {
 		slog.Error("Failed to create log file at " + logFilepath + " !")
-	}
-
-	if Cfg.Debug && Cfg.TraceFunctionLogging {
-		opts = &slog.HandlerOptions{
-			AddSource: true,
-			Level:     slog.LevelDebug,
-			//ReplaceAttr: nil,
-		}
-	} else if Cfg.Debug {
-		opts = &slog.HandlerOptions{
-			AddSource: false,
-			Level:     slog.LevelDebug,
-		}
-	} else {
-		opts = &slog.HandlerOptions{
-			AddSource: false,
-			Level:     slog.LevelInfo,
-		}
 	}
 
 	fileHandler := slog.NewJSONHandler(file, opts)

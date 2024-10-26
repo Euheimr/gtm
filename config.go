@@ -10,44 +10,68 @@ import (
 
 type ConfigVars struct {
 	Debug                bool
-	Production           bool
 	DeleteOldLogs        bool
 	TraceFunctionLogging bool
 	UpdateInterval       time.Duration
 	Celsius              bool
-	EnableGPU            bool
+}
+
+var CFG_DEFAULT = ConfigVars{
+	Debug:                false,
+	DeleteOldLogs:        false,
+	TraceFunctionLogging: false,
+	UpdateInterval:       500 * time.Millisecond,
+	Celsius:              true,
 }
 
 var Cfg ConfigVars
 
-func init() {
-	readConfig()
-}
+func ReadConfig() {
+	// seed the default values first, then override those defaults with values read
+	//	from the config file (.env)
+	Cfg = CFG_DEFAULT
 
-func readConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		slog.Error("Error loading .env file")
-	}
+		slog.Error("Failed to read config vars from `.env` ... using defaults")
+	} else {
+		// Reading .env was successful ... populate the values from .env file
+		if debug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
+			Cfg.Debug = debug
+		} else {
+			slog.Error("Failed to parse boolean: DEBUG ... using default value: " +
+				strconv.FormatBool(CFG_DEFAULT.Debug))
+		}
 
-	DEBUG, err := strconv.ParseBool(os.Getenv("DEBUG"))
-	DELETE_OLD_LOGS, err := strconv.ParseBool(os.Getenv("DELETE_OLD_LOGS"))
-	TRACE_FUNCTION_LOGGING, err := strconv.ParseBool(os.Getenv("TRACE_FUNCTION_LOGGING"))
-	UPDATE_INTERVAL, err := strconv.ParseInt(os.Getenv("UPDATE_INTERVAL"), 10, 64)
-	CELSIUS, err := strconv.ParseBool(os.Getenv("CELSIUS"))
+		if deleteOldLogs, err := strconv.ParseBool(os.Getenv("DELETE_OLD_LOGS")); err == nil {
+			Cfg.DeleteOldLogs = deleteOldLogs
+		} else {
+			slog.Error("Failed to parse boolean: deleteOldLogs ... " +
+				"using default value: " + strconv.FormatBool(CFG_DEFAULT.DeleteOldLogs))
+		}
 
-	Cfg = ConfigVars{
-		Debug:                DEBUG,
-		DeleteOldLogs:        DELETE_OLD_LOGS,
-		TraceFunctionLogging: TRACE_FUNCTION_LOGGING,
-		UpdateInterval:       time.Duration(UPDATE_INTERVAL) * time.Millisecond,
-		Celsius:              CELSIUS,
-	}
+		traceFunctionLogging, err := strconv.ParseBool(os.Getenv("TRACE_FUNCTION_LOGGING"))
+		if err == nil {
+			Cfg.TraceFunctionLogging = traceFunctionLogging
+		} else {
+			slog.Error("Failed to parse boolean: traceFunctionLogging ... " +
+				"using default value: " + strconv.FormatBool(CFG_DEFAULT.TraceFunctionLogging))
+		}
 
-	if Cfg.Debug {
-		slog.Debug("DELETE_OLD_LOGS=" + os.Getenv("DELETE_OLD_LOGS"))
-		slog.Debug("TRACE_FUNCTION_LOGGING=" + os.Getenv("TRACE_FUNCTION_LOGGING"))
-		slog.Debug("UPDATE_INTERVAL=" + os.Getenv("UPDATE_INTERVAL") + "ms")
-		slog.Debug("CELSIUS=" + os.Getenv("CELSIUS"))
+		updateInterval, err := strconv.ParseInt(os.Getenv("UPDATE_INTERVAL"), 10, 64)
+		if err == nil {
+			Cfg.UpdateInterval = time.Duration(updateInterval) * time.Millisecond
+		} else {
+			slog.Error("Failed to parse integer: UPDATE_INTERVAL ... " +
+				"using default value: " + CFG_DEFAULT.UpdateInterval.String())
+		}
+
+		celsius, err := strconv.ParseBool(os.Getenv("CELSIUS"))
+		if err == nil {
+			Cfg.Celsius = celsius
+		} else {
+			slog.Error("Failed to parse boolean: CELSIUS ... " +
+				"using default value: " + strconv.FormatBool(CFG_DEFAULT.Celsius))
+		}
 	}
 }
