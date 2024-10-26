@@ -50,9 +50,33 @@ _Also, I totally haven't redesigned this whole project 5 times... definitely not
 
 ## Development
 
-This project uses BASH/zsh shell scripts to run & build the app:
-  - For `Linux` or `macOS`, you can just use your standard shell.
-  - On `Windows`, you can use [Cygwin](https://cygwin.com/) to get those GNU tools (`tail`, `sh`, `tree`, `ls`, etc..).
+<pre>
+Source Code Structure
+
+gtm/
+ ├─── cmd/
+ │     └── main.go
+ ├─── scripts/
+ │     ├── run.sh
+ │     ├── log.sh
+ │     └── pprof.sh
+ ├─── ui/
+ │     ├── common.go
+ │     ├── cpu.go
+ │     ├── disk.go
+ │     ├── gpu.go
+ │     ├── mem.go
+ │     ├── net.go
+ │     └── proc.go
+ ├─── config.go
+ ├─── devices.go
+ └─── log.go
+
+</pre>
+
+This project uses BASH/zsh shell scripts (within `scripts/`) to run & build the app:
+  - For `Linux` or `macOS`, you can just use your standard shell
+  - On `Windows`, you can use [Cygwin](https://cygwin.com/) to get those GNU tools (`sh`, `ls`, `tail`, `tree`, ...)
 
 There is a run & build script `run.sh` in the root directory of this project and `log.sh` uses `tail` to track the latest log file entries in your terminal.
 
