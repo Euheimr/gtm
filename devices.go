@@ -39,11 +39,13 @@ const (
 )
 
 type DiskInfo struct {
+	Mountpoint    string         `json:"mountpoint"`
+	Device        string         `json:"device"`
 	FSType        FileSystemType `json:"fstype"`
 	IsVirtualDisk bool           `json:"is_virtual_disk"`
 	Free          uint64         `json:"free"`
 	Used          uint64         `json:"used"`
-	UsedPercent   uint64         `json:"used_percent"`
+	UsedPercent   float64        `json:"used_percent"`
 	Total         uint64         `json:"total"`
 }
 
@@ -58,9 +60,9 @@ type GPUData struct {
 
 var (
 	cpuInfo []cpu.InfoStat
-	//diskInfo []DiskInfo
-	diskInfo  []disk.PartitionStat
-	diskUsage disk.UsageStat
+	diskInfo []DiskInfo
+	gpuInfo  []GPUInfo
+	hostInfo *host.InfoStat
 	gpuInfo   []GPUData
 	hostInfo  *host.InfoStat
 	memInfo   *mem.VirtualMemoryStat
@@ -126,38 +128,37 @@ func GetCPUModel(formatName bool) string {
 	return cpuModel
 }
 
-func GetDiskInfo() []disk.PartitionStat {
-	dInfo, err := disk.Partitions(false)
-	if err != nil {
-		slog.Error("Failed to retrieve disk.Partitions()! " + err.Error())
+func convertFSType(fsType string) FileSystemType {
+	switch fsType {
+	case "APFS":
+		return APFS
+	case "exFAT":
+		return exFAT
+	case "FAT":
+		return FAT
+	case "FAT32":
+		return FAT32
+	case "EXT":
+		return EXT
+	case "EXT2":
+		return EXT2
+	case "EXT3":
+		return EXT3
+	case "EXT4":
+		return EXT4
+	case "NTFS":
+		return NTFS
+	case "JFS":
+		return JFS
+	case "ZFS":
+		return ZFS
+	default:
+		// unknown filesystem?
+		return -1
 	}
-	// FIXME: diskInfo as new var might be redundant?
-
-	diskInfo = dInfo
-	slog.Debug("disk.Partitions(): physical disk count = " + strconv.Itoa(len(diskInfo)))
-	for i, dsk := range diskInfo {
-		slog.Debug("disk.Partitions(): disk #" + strconv.Itoa(i) + ": " + dsk.String())
-	}
-	return diskInfo
 }
 
-func GetDiskUsage(path string) (disk.UsageStat, error) {
-	if len(diskUsage.String()) > 0 && time.Since(lastFetchDisk) < time.Hour {
-		return diskUsage, nil
-	}
-
-	dUsage, err := disk.Usage(path)
-	if err != nil {
-		slog.Error("Failed to retrieve disk.Usage(" + path + ")! " + err.Error())
-		return disk.UsageStat{}, err
-	}
-	slog.Debug("disk.Usage(" + path + "): " + dUsage.String())
-	diskUsage = *dUsage
-	lastFetchDisk = time.Now()
-	return diskUsage, err
-}
-
-func IsVirtualDisk(path string) bool {
+func isVirtualDisk(path string) bool {
 	switch runtime.GOOS {
 	case "windows":
 		d, err := windows.UTF16PtrFromString(path)
@@ -200,6 +201,47 @@ func IsVirtualDisk(path string) bool {
 		slog.Debug("Not on windows... ignoring RAMDISK check ...")
 		return false
 	}
+}
+
+func GetDiskInfo() []DiskInfo {
+	if len(diskInfo) > 0 && time.Since(lastFetchDisk) < time.Minute {
+		return diskInfo
+	}
+
+	dInfo, err := disk.Partitions(false)
+	if err != nil {
+		slog.Error("Failed to retrieve disk.Partitions()! " + err.Error())
+	}
+
+	diskInfo = make([]DiskInfo, len(dInfo))
+	for i, dsk := range dInfo {
+		usage, err := disk.Usage(dsk.Mountpoint)
+		if err != nil {
+			slog.Error("Failed to retrieve disk.Usage(" + dsk.Mountpoint + ")! " +
+				err.Error())
+		}
+		slog.Debug("disk: " + dsk.String())
+		slog.Debug("usage: " + usage.String())
+
+		// convert filesystem type to integer
+		fsType := convertFSType(usage.Fstype)
+		isVDisk := isVirtualDisk(dsk.Mountpoint)
+		usedPercent := math.Round((usage.UsedPercent*100)/100) / 100
+
+		info := DiskInfo{
+			Mountpoint:    dsk.Mountpoint,
+			Device:        dsk.Device,
+			FSType:        fsType,
+			IsVirtualDisk: isVDisk,
+			Free:          usage.Free,
+			Used:          usage.Used,
+			UsedPercent:   usedPercent,
+			Total:         usage.Total,
+		}
+		diskInfo[i] = info
+	}
+	lastFetchDisk = time.Now()
+	return diskInfo
 }
 
 func HasGPU() bool {
