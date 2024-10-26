@@ -59,13 +59,12 @@ type GPUInfo struct {
 }
 
 var (
-	cpuInfo []cpu.InfoStat
+	cpuInfo  []cpu.InfoStat
 	diskInfo []DiskInfo
 	gpuInfo  []GPUInfo
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
-	memInfo   *mem.VirtualMemoryStat
 )
 
 var (
@@ -96,11 +95,10 @@ func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
 func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIBIBYTE
 	if rounded {
-		// effectively return an integer via rounding the float to an int (ie. "11.0" GB)
+		// effectively return an integer via rounding the float to an int (ie. "11.0" GiB)
 		return math.RoundToEven(result)
-	} else {
-		return result
 	}
+	return result
 }
 
 func GetCPUInfo() []cpu.InfoStat {
