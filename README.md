@@ -121,24 +121,24 @@ You may also force a build and NOT run the executable by running:
     - [ ] graphs
     - [ ] alerts (over-temp)
 - Disk - `gopsutil`
-  - [ ] Device data
+  - [x] Device data
   - UI
     - [ ] bars
     - [ ] graphs
 - GPU - `nvidia-smi` & `rocm-smi`
-  - [ ] Device data
+  - [x] Device data
   - UI
-    - [ ] bars
+    - [x] bars
     - [ ] graphs
     - [ ] alerts (over-temp)
 - Memory - `gopsutil`
   - [x] Device data
   - UI
-    - [ ] bars
+    - [x] bars
     - [ ] graphs
     - [ ] alerts (excessive paging / usage >85%)
 - [ ] Networking - `gopsutil`
-  - [ ] Device data (by interface)
+  - [x] Device data (all interfaces)
   - UI
     - [ ] bars
     - [ ] graphs (braille like `htop` ?)
