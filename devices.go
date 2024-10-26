@@ -64,9 +64,8 @@ var (
 	gpuInfo  []GPUInfo
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
-	hostInfo  *host.InfoStat
+	netInfo  []net.IOCountersStat
 	memInfo   *mem.VirtualMemoryStat
-	netInfo   []net.IOCountersStat
 )
 
 var (
@@ -436,14 +435,21 @@ func GetMemoryInfo() *mem.VirtualMemoryStat {
 }
 
 func GetNetworkInfo() []net.IOCountersStat {
+	if time.Since(lastFetchNet) < time.Second && len(netInfo) > 0 {
+		return netInfo
+	}
+
 	nInfo, err := net.IOCounters(false)
 	if err != nil {
 		slog.Error("Failed to retrieve net.IOCounters()! " + err.Error())
 	}
+
 	netInfo = nInfo
 	for i, iface := range netInfo {
 		slog.Debug("net.IOCounters(), interface #" + strconv.Itoa(i) + ": " +
 			iface.String())
 	}
+
+	lastFetchNet = time.Now()
 	return netInfo
 }
