@@ -9,21 +9,6 @@ import (
 	"time"
 )
 
-type cpuBox struct {
-	Stats *tview.TextView
-	Temp  *tview.TextView
-}
-
-type layoutMain struct {
-	CPU       *cpuBox
-	Disk      *tview.TextView
-	GPU       *tview.TextView
-	GPUTemp   *tview.TextView
-	Memory    *tview.TextView
-	Network   *tview.TextView
-	Processes *tview.Table
-}
-
 // These constants are text formatting tags used by the tcell package
 const (
 	BLACK  string = "[black]"
@@ -45,80 +30,9 @@ const (
 )
 
 var (
-	Layout      *layoutMain
 	barSymbols  = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
 	treeSymbols = [4]string{"│", "├", "─", "└"}
 )
-
-func init() {
-	// Initialize the main Layout ASAP
-	Layout = &layoutMain{
-		CPU: &cpuBox{
-			Stats: tview.NewTextView(),
-			Temp:  tview.NewTextView(),
-		},
-		Disk:      tview.NewTextView(),
-		GPU:       tview.NewTextView(),
-		GPUTemp:   tview.NewTextView(),
-		Memory:    tview.NewTextView(),
-		Network:   tview.NewTextView(),
-		Processes: tview.NewTable(),
-	}
-}
-
-func SetupLayout() (fMain *tview.Flex) {
-	slog.Info("Setting up layout ...")
-
-	// This is the BASE box containing ALL OTHER boxes
-	fMain = tview.NewFlex()
-	// Ensure the base "Main" layout view is always Rows and not Columns
-	fMain.SetDirection(tview.FlexRow)
-
-	// SETUP PRIMARY LAYOUT
-	/// Row 1
-	flexRow1 := tview.NewFlex()
-
-	// ROW 1 COLUMN 1
-	cpuParentBox := tview.NewFlex()
-	cpuParentBox.SetBorder(true).SetTitle(" " + GetCPUModel(true) + " ")
-	flexRow1.AddItem(cpuParentBox.
-		AddItem(Layout.CPU.Stats, 0, 5, false).
-		AddItem(Layout.CPU.Temp, 0, 2, false),
-		0, 6, false)
-
-	// ROW 1 COLUMN 2
-	flexRow1.AddItem(Layout.Memory, 0, 2, false)
-	fMain.AddItem(flexRow1, 0, 22, false)
-
-	/// Row 2
-	flexRow2 := tview.NewFlex()
-	// ROW 2 COLUMN 1
-	flexRow2.AddItem(Layout.Processes, 0, 2, false)
-	// FIXME: There's a weird bug here where selecting the Processes table also
-	// 	selects this row too?
-	// ROW 2 COLUMN 2
-	flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(Layout.Network, 0, 2, false).
-		AddItem(Layout.Disk, 0, 2, false),
-		0, 1, false)
-	if HasGPU() {
-		// ROW 2 COLUMN 3
-		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(Layout.GPU, 0, 4, false).
-			AddItem(Layout.GPUTemp, 0, 4, false),
-			0, 1, false)
-	}
-	fMain.AddItem(flexRow2, 0, 40, false)
-
-	/// Row 3
-	flexRow3 := tview.NewFlex()
-	flexRow3.AddItem(tview.NewTextView().
-		SetText(" <F1> Test   <F2> Test 1   <F3> Test 2   <F4> Test 3"),
-		0, 1, false)
-	fMain.AddItem(flexRow3, 0, 1, false)
-
-	return fMain
-}
 
 func sleepWithTimestampDelta(timestamp time.Time, update time.Duration, isResized bool) {
 	if isResized {
@@ -169,7 +83,7 @@ func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty s
 	barText += colorEmpty
 
 	// Iterate over an integer count of empty chars to add in the empty/unused part of
-	//	the bar
+	//	the bar. We -1 to countEmpty to make room for the last character (var charEnd)
 	for i := 0; i < (countEmpty - 1); i++ {
 		barText += charEmpty
 	}
@@ -207,23 +121,24 @@ func buildBoxTitleRow(title string, statStr string, boxWidth int, spaceChar stri
 	return title + insertCenterSpacing(title, statStr, boxWidth, spaceChar) + statStr + "\n"
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////// UI GOROUTINES START HERE ///////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
+////##################################################################################////
+////########################//// UI GOROUTINES START HERE ////########################////
 
-func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
+// UpdateCPU is a text UI function that starts as a goroutine before the application
+// starts.
+func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
-	Layout.CPU.Stats.SetDynamicColors(true)
-	Layout.CPU.Stats.SetBorder(showBorder)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder)
 	slog.Info("Starting `UpdateCPU()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, isResized = getInnerBoxSize(Layout.CPU.Stats.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		// TODO: use 2 boxes as columns (side-by-side) to display a graph and stats
 		// 	(in that order)
@@ -232,37 +147,39 @@ func UpdateCPU(app *tview.Application, showBorder bool, update time.Duration) {
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.CPU.Stats.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateCPUTemp(app *tview.Application, showBorder bool, update time.Duration) {
+func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
 
-	Layout.CPU.Temp.SetDynamicColors(true)
-	Layout.CPU.Temp.SetBorder(showBorder).SetTitle(LblCPUTemp)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(LblCPUTemp)
 	slog.Info("Starting `UpdateCPUTemp()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(Layout.CPU.Temp.Box, width, height)
+		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.CPU.Temp.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
+//// Disk/HDD/SSD ////####################################################################
+
+func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
@@ -270,8 +187,8 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 		//disksVirtualStr []bool
 	)
 
-	Layout.Disk.SetDynamicColors(true)
-	Layout.Disk.SetBorder(showBorder).SetTitle(LblDisk)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(LblDisk)
 	slog.Info("Starting `UpdateDisk()` UI goroutine ...")
 
 	for {
@@ -292,7 +209,7 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 			//boxText += dsk.Mountpoint + " | " + strconv.FormatBool(dsk.IsVirtualDisk) +
 			//	" | " + strconv.FormatFloat(dsk.UsedPercent, 'g', -1, 64) +
 			//	"% of " + diskCapacityStr + "\n"
-			width, height, _ = getInnerBoxSize(Layout.Disk.Box, width, height)
+			width, height, _ = getInnerBoxSize(box.Box, width, height)
 			boxText += buildBoxTitleRow(dsk.Mountpoint, diskCapacityStr, width, " ")
 			boxText += buildProgressBar(dsk.UsedPercent, width, RED, WHITE)
 			boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
@@ -301,25 +218,27 @@ func UpdateDisk(app *tview.Application, showBorder bool, update time.Duration) {
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.Disk.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
+//// GPU ////#############################################################################
+
+func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
 
-	Layout.GPU.SetDynamicColors(true)
-	Layout.GPU.SetBorder(showBorder).SetTitle(" " + GetGPUName() + " ")
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(" " + GetGPUName() + " ")
 	slog.Info("Starting `UpdateGPU()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(Layout.GPU.Box, width, height)
+		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
 		gpuData = GetGPUInfo()
 		lastElement := len(gpuData) - 1
@@ -339,25 +258,25 @@ func UpdateGPU(app *tview.Application, showBorder bool, update time.Duration) {
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.GPU.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateGPUTemp(app *tview.Application, showBorder bool, update time.Duration) {
+func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
 
-	Layout.GPUTemp.SetDynamicColors(true)
-	Layout.GPUTemp.SetBorder(showBorder).SetTitle(LblGPUTemp)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(LblGPUTemp)
 	slog.Info("Starting `UpdateGPUTemp()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(Layout.GPUTemp.Box, width, height)
+		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
 		gpuData = GetGPUInfo()
 		lastElement := len(gpuData) - 1
@@ -372,25 +291,27 @@ func UpdateGPUTemp(app *tview.Application, showBorder bool, update time.Duration
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.GPUTemp.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration) {
+//// Memory ////##########################################################################
+
+func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
 
-	Layout.Memory.SetDynamicColors(true)
-	Layout.Memory.SetBorder(showBorder).SetTitle(LblMemory)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(LblMemory)
 	slog.Info("Starting `UpdateMemory()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, isResized = getInnerBoxSize(Layout.Memory.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		memInfo = GetMemoryInfo()
 		/// END DATA FETCH
@@ -411,26 +332,28 @@ func UpdateMemory(app *tview.Application, showBorder bool, update time.Duration)
 
 		app.QueueUpdateDraw(func() {
 			// TODO: do draw
-			Layout.Memory.SetText(boxText)
+			box.SetText(boxText)
 
 		})
 	}
 }
 
-func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration) {
+//// Network ////#########################################################################
+
+func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool, update time.Duration) {
 	var (
 		boxText       string
 		width, height int
 		isResized     bool
 	)
 
-	Layout.Network.SetDynamicColors(true)
-	Layout.Network.SetBorder(showBorder).SetTitle(LblNetwork)
+	box.SetDynamicColors(true)
+	box.SetBorder(showBorder).SetTitle(LblNetwork)
 	slog.Info("Starting `UpdateNetwork()` UI goroutine ...")
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(Layout.Network.Box, width, height)
+		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
 		netInfo = GetNetworkInfo()
 
@@ -446,14 +369,16 @@ func UpdateNetwork(app *tview.Application, showBorder bool, update time.Duration
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
 		app.QueueUpdateDraw(func() {
-			Layout.Network.SetText(boxText)
+			box.SetText(boxText)
 		})
 	}
 }
 
-func UpdateProcesses(app *tview.Application, showBorder bool, update time.Duration) {
+//// Processes ////#######################################################################
 
-	Layout.Processes.SetBorder(showBorder).SetTitle(LblProc)
+func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool, update time.Duration) {
+
+	box.SetBorder(showBorder).SetTitle(LblProc)
 	slog.Info("Starting `UpdateProcesses()` UI goroutine ...")
 
 	for {

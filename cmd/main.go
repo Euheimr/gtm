@@ -11,7 +11,29 @@ import (
 	"time"
 )
 
-var fMain *tview.Flex
+type CPUBox struct {
+	Stats *tview.TextView
+	Temp  *tview.TextView
+}
+
+type GPUBox struct {
+	Stats *tview.TextView
+	Temp  *tview.TextView
+}
+
+type LayoutMain struct {
+	CPU       *CPUBox
+	Disk      *tview.TextView
+	GPU       *GPUBox
+	Memory    *tview.TextView
+	Network   *tview.TextView
+	Processes *tview.Table
+}
+
+var (
+	fMain  *tview.Flex
+	layout *LayoutMain
+)
 
 func init() {
 	// Read the `.env` config before logging and anything else
@@ -38,11 +60,79 @@ func init() {
 	gtm.GetHostInfo()
 	gtm.GetMemoryInfo()
 	gtm.GetNetworkInfo()
+
+	// Initialize the main layout ASAP
+	layout = &LayoutMain{
+		CPU: &CPUBox{
+			Stats: tview.NewTextView(),
+			Temp:  tview.NewTextView(),
+		},
+		Disk: tview.NewTextView(),
+		GPU: &GPUBox{
+			Stats: tview.NewTextView(),
+			Temp:  tview.NewTextView(),
+		},
+		Memory:    tview.NewTextView(),
+		Network:   tview.NewTextView(),
+		Processes: tview.NewTable(),
+	}
+}
+
+func setupLayout() {
+	slog.Info("Setting up layout ...")
+
+	// This is the BASE box containing ALL OTHER boxes
+	fMain = tview.NewFlex()
+	// Ensure the base "Main" layout view is always Rows and not Columns
+	fMain.SetDirection(tview.FlexRow)
+
+	// SETUP PRIMARY LAYOUT
+	/// Row 1
+	flexRow1 := tview.NewFlex()
+
+	// ROW 1 COLUMN 1
+	cpuParentBox := tview.NewFlex()
+	cpuParentBox.SetBorder(true).SetTitle(" " + gtm.GetCPUModel(true) + " ")
+	flexRow1.AddItem(cpuParentBox.
+		AddItem(layout.CPU.Stats, 0, 5, false).
+		AddItem(layout.CPU.Temp, 0, 2, false),
+		0, 6, false)
+
+	// ROW 1 COLUMN 2
+	flexRow1.AddItem(layout.Memory, 0, 2, false)
+	fMain.AddItem(flexRow1, 0, 22, false)
+
+	/// Row 2
+	flexRow2 := tview.NewFlex()
+	// ROW 2 COLUMN 1
+	flexRow2.AddItem(layout.Processes, 0, 2, false)
+	// FIXME: There's a weird bug here where selecting the Processes table also
+	// 	selects this row too?
+	// ROW 2 COLUMN 2
+	flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(layout.Network, 0, 2, false).
+		AddItem(layout.Disk, 0, 2, false),
+		0, 1, false)
+	if gtm.HasGPU() {
+		// ROW 2 COLUMN 3
+		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(layout.GPU.Stats, 0, 4, false).
+			AddItem(layout.GPU.Temp, 0, 4, false),
+			0, 1, false)
+	}
+	fMain.AddItem(flexRow2, 0, 40, false)
+
+	/// Row 3
+	flexRow3 := tview.NewFlex()
+	flexRow3.AddItem(tview.NewTextView().
+		SetText(" <F1> Test   <F2> Test 1   <F3> Test 2   <F4> Test 3"),
+		0, 1, false)
+	fMain.AddItem(flexRow3, 0, 1, false)
 }
 
 func main() {
 	// Scaffold the FlexBox `Main` and layout
-	fMain = gtm.SetupLayout()
+	setupLayout()
 
 	// Create a new application and be sure to set the root object
 	app := tview.NewApplication()
@@ -62,17 +152,17 @@ func main() {
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
-	go gtm.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateCPUTemp(app, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateCPU(app, layout.CPU.Stats, false, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateDisk(app, layout.Disk, true, gtm.Cfg.UpdateInterval)
 	if gtm.HasGPU() {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
-		go gtm.UpdateGPU(app, true, gtm.Cfg.UpdateInterval)
-		go gtm.UpdateGPUTemp(app, true, gtm.Cfg.UpdateInterval)
+		go gtm.UpdateGPU(app, layout.GPU.Stats, true, gtm.Cfg.UpdateInterval)
+		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true, gtm.Cfg.UpdateInterval)
 	}
-	go gtm.UpdateMemory(app, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateNetwork(app, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateProcesses(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateMemory(app, layout.Memory, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateNetwork(app, layout.Network, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateProcesses(app, layout.Processes, true, gtm.Cfg.UpdateInterval)
 
 	slog.Info("Waiting for goroutines to start up ...")
 	time.Sleep(40 * time.Millisecond) // wait to start up all the goroutines
