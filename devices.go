@@ -58,6 +58,11 @@ type DiskInfo struct {
 }
 
 type GPUInfo struct {
+	Name   string
+	Vendor string
+}
+
+type GPUData struct {
 	Id          int32   `json:"card-id"`
 	Load        float64 `json:"load"`
 	MemoryUsage float64 `json:"memoryUsage"`
@@ -70,7 +75,8 @@ var (
 	cpuInfo  CPUInfo
 	cpuData  []CPUData
 	diskInfo []DiskInfo
-	gpuInfo  []GPUInfo
+	gpuInfo  GPUInfo
+	gpuData  []GPUData
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
@@ -86,11 +92,7 @@ var (
 	lastFetchProc time.Time
 )
 
-var (
-	gpuName      string
-	gpuVendor    string
-	hostname     string
-)
+var hostname string
 
 func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIGABYTE
@@ -259,18 +261,18 @@ func GetDiskInfo() []DiskInfo {
 
 func HasGPU() bool {
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
-		gpuVendor = "nvidia"
+		gpuInfo.Vendor = "nvidia"
 		return true
 	}
 	if err := exec.Command("rocm-smi").Run(); err == nil {
-		gpuVendor = "amd"
+		gpuInfo.Vendor = "amd"
 		return true
 	}
 	slog.Error("HasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
 	return false
 }
 
-func (g *GPUInfo) String() string {
+func (g *GPUData) String() string {
 	// NVIDIA always reports memory usage in MiB
 	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
 	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
@@ -281,24 +283,23 @@ func (g *GPUInfo) String() string {
 		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
 }
 
-func (g *GPUInfo) JSON(indent bool) string {
+func (g *GPUData) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal indent JSON from struct GPUInfo{} ! " + err.Error())
+			slog.Error("Failed to marshal indent JSON from struct GPUData{} ! " + err.Error())
 		}
 		return string(out)
 	} else {
 		out, err := json.Marshal(g)
 		if err != nil {
-			slog.Error("Failed to marshal JSON from struct GPUInfo{} ! " + err.Error())
+			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
 		}
 		return string(out)
 	}
 }
 
-func parseGPUNvidiaData(output []byte) []GPUInfo {
-	var gpuData []GPUInfo
+func parseGPUNvidiaData(output []byte) []GPUData {
 	var (
 		id          int64
 		load        int64
@@ -313,7 +314,7 @@ func parseGPUNvidiaData(output []byte) []GPUInfo {
 	for _, line := range info {
 		if line != "" {
 			data := strings.Split(line, ", ")
-			gpuName = data[1]
+			gpuInfo.Name = data[1]
 
 			if id, err = strconv.ParseInt(data[0], 10, 32); err != nil {
 				slog.Error("Failed to parse GPU Id from string -> int ! " + err.Error())
@@ -339,7 +340,7 @@ func parseGPUNvidiaData(output []byte) []GPUInfo {
 				slog.Error("Failed to parse float: temp !" + err.Error())
 			}
 
-			gpu := GPUInfo{
+			gpu := GPUData{
 				Id:          int32(id),
 				Load:        float64(load) / 100,
 				MemoryUsage: memoryUsage,
@@ -353,17 +354,17 @@ func parseGPUNvidiaData(output []byte) []GPUInfo {
 	return gpuData
 }
 
-func GetGPUInfo() []GPUInfo {
+func GetGPUInfo() []GPUData {
 	if !HasGPU() {
 		return nil
 	}
 
 	// Limit getting device data to just once a second, and NOT with every UI update
-	if time.Since(lastFetchGPU) <= time.Second && len(gpuInfo) > 0 {
-		return gpuInfo
+	if time.Since(lastFetchGPU) <= time.Second && len(gpuData) > 0 {
+		return gpuData
 	}
 
-	switch gpuVendor {
+	switch gpuInfo.Vendor {
 	case "nvidia":
 		cmd := exec.Command(
 			"nvidia-smi",
@@ -376,9 +377,9 @@ func GetGPUInfo() []GPUInfo {
 			return nil
 		}
 		//slog.Debug(data[len(data)-1].String())
-		gpuInfo = parseGPUNvidiaData(data)
+		gpuData = parseGPUNvidiaData(data)
 		lastFetchGPU = time.Now()
-		return gpuInfo
+		return gpuData
 	case "amd":
 		// TODO: write rocm-smi code for AMD gpu detection and data parsing
 		slog.Error("AMD GPU not implemented yet !")
@@ -387,7 +388,7 @@ func GetGPUInfo() []GPUInfo {
 	return nil
 }
 
-func GetGPUName() string { return gpuName }
+func GetGPUName() string { return gpuInfo.Name }
 
 func GetHostInfo() *host.InfoStat {
 	if time.Since(lastFetchHost) < time.Second && len(hostInfo.String()) > 0 {
