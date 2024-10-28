@@ -38,6 +38,14 @@ const (
 	ZFS
 )
 
+type CPUInfo struct {
+	Name        string
+	Vendor      string
+	SocketCount int
+}
+
+type CPUData struct{}
+
 type DiskInfo struct {
 	Mountpoint    string         `json:"mountpoint"`
 	Device        string         `json:"device"`
@@ -59,7 +67,8 @@ type GPUInfo struct {
 }
 
 var (
-	cpuInfo  []cpu.InfoStat
+	cpuInfo  CPUInfo
+	cpuData  []CPUData
 	diskInfo []DiskInfo
 	gpuInfo  []GPUInfo
 	hostInfo *host.InfoStat
@@ -78,7 +87,6 @@ var (
 )
 
 var (
-	cpuModelName string
 	gpuName      string
 	gpuVendor    string
 	hostname     string
@@ -101,26 +109,29 @@ func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	return result
 }
 
-func GetCPUInfo() []cpu.InfoStat {
+func GetCPUInfo() CPUInfo {
 	cInfo, err := cpu.Info()
 	if err != nil {
 		slog.Error("Failed to retrieve cpu.Info()! " + err.Error())
 	}
-	cpuInfo = cInfo
-	slog.Debug("cpu.Info(): "+cpuInfo[0].String(), "socketCount", len(cpuInfo))
+	slog.Debug("cpu.Info(): "+cInfo[0].String(), "socketCount", len(cInfo))
 
 	// model name doesn't change with each syscall... so cache it here
-	cpuModelName = cpuInfo[0].ModelName
+	cpuInfo = CPUInfo{
+		Name:        cInfo[0].ModelName,
+		Vendor:      cInfo[0].VendorID,
+		SocketCount: len(cInfo),
+	}
 
 	return cpuInfo
 }
 
 func GetCPUModel(formatName bool) string {
-	if cpuModelName == "" {
+	if cpuInfo.Name == "" {
 		GetCPUInfo()
 	}
-	cpuModel := cpuModelName
-	if formatName && cpuInfo[0].VendorID == "GenuineIntel" {
+	cpuModel := cpuInfo.Name
+	if formatName && cpuInfo.Vendor == "GenuineIntel" {
 		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
 		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
 		cpuModel = strings.ReplaceAll(cpuModel, "CPU @ ", "@")
