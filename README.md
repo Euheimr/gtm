@@ -46,28 +46,20 @@ _Also, I totally haven't redesigned this whole project 5 times... definitely not
 ## Development
 
 
-Source Code Structure:
+_Source Code Structure_:
 
-<pre>
-gtm/
- ├─── cmd/
- │     └── main.go
- ├─── scripts/
- │     ├── run.sh
- │     ├── log.sh
- │     └── pprof.sh
- ├─── ui/
- │     ├── common.go
- │     ├── cpu.go
- │     ├── disk.go
- │     ├── gpu.go
- │     ├── mem.go
- │     ├── net.go
- │     └── proc.go
- ├─── config.go
- ├─── devices.go
- └─── log.go
-</pre>
+    gtm/
+     ├── cmd/
+     │    └─ main.go
+     ├── scripts/
+     │    ├─ run.sh
+     │    ├─ log.sh
+     │    └─ pprof.sh
+     ├─ config.go
+     ├─ devices.go
+     ├─ log.go
+     └─ ui.go
+
 
 This project uses BASH/zsh shell scripts (within `scripts/`) to run & build the app:
   - For `Linux` or `macOS`, you can just use your standard shell
@@ -77,6 +69,8 @@ There is a run & build script `run.sh` in the root directory of this project and
 
 `cgo` is disabled (`CGO_ENABLED=0`) in the `run.sh` script. It is not needed for this project, but is a design requirement (as noted above in [Requirements](#Requirements)) for [specific reasons](https://dave.cheney.net/2016/01/18/cgo-is-not-go).
 This is to ensure I don't accidentally manage to use `cgo` and then run into weird, complex issues down the road.
+
+<br>
 
 ### Building
 
@@ -92,18 +86,23 @@ This is to ensure I don't accidentally manage to use `cgo` and then run into wei
 3. `cd <PROJECT DIRECTORY>` (ie. `cd ~/Downloads/gtm`)
 4. `sh ./scripts/run.sh`
 
+<br>
+
 You may force a Build & Run the executable _even if a binary exists_ by running:
 
-  `sh ./scripts/run.sh build` or 
+  `sh ./scripts/run.sh build` 
+  
+or `sh ./scripts/run.sh -b`
 
-  `sh ./scripts/run.sh -b`
+<br>
 
-You may also force a Build and **NOT** run the executable by running:
+You may also ONLY force a Build and **NOT** run the executable by running:
 
-  `sh ./scripts/run.sh build-only` or
+  `sh ./scripts/run.sh build-only` 
 
-  `sh ./scripts/run.sh -bo`
+or `sh ./scripts/run.sh -bo`
 
+<br>
 
 ### TODO
 
@@ -144,6 +143,8 @@ You may also force a Build and **NOT** run the executable by running:
     - [ ] Kill
     - [ ] Priority
     - [ ] Open file location
+
+<br>
 
 ### Reference
 
