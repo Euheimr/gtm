@@ -1,6 +1,6 @@
 # gtm
 
-_**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource monitor written entirely in [Go](https://go.dev/)._
+_**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource monitor written entirely in [Go](https://go.dev/)_
 
 ## Table of Contents
 
@@ -17,6 +17,7 @@ _**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource
       2. [GPU](#gpu)
       3. [Example Projects](#example-projects)
 3. [Contributing](#contributing)
+
 ---
 
 ## About
@@ -44,7 +45,6 @@ _Also, I totally haven't redesigned this whole project 5 times... definitely not
 --- 
 
 ## Development
-
 
 _Source Code Structure_:
 
@@ -162,6 +162,8 @@ or `sh ./scripts/run.sh -bo`
 #### Example projects
 
  - [ZanMax/gpu-stats](https://github.com/ZanMax/gpu-stats/blob/3197b24cebfd/main.go) - a project using `nvidia-smi` & `rocm-smi`
+
+--- 
 
 ## Contributing
 
