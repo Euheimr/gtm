@@ -4,7 +4,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"gtm"
-	"gtm/ui"
 	"log"
 	"log/slog"
 	"net/http"
@@ -43,7 +42,7 @@ func init() {
 
 func main() {
 	// Scaffold the FlexBox `Main` and layout
-	fMain = ui.SetupLayout()
+	fMain = gtm.SetupLayout()
 
 	// Create a new application and be sure to set the root object
 	app := tview.NewApplication()
@@ -63,17 +62,17 @@ func main() {
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
-	go ui.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
-	go ui.UpdateCPUTemp(app, true, gtm.Cfg.UpdateInterval)
-	go ui.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateCPU(app, false, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateCPUTemp(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateDisk(app, true, gtm.Cfg.UpdateInterval)
 	if gtm.HasGPU() {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
-		go ui.UpdateGPU(app, true, gtm.Cfg.UpdateInterval)
-		go ui.UpdateGPUTemp(app, true, gtm.Cfg.UpdateInterval)
+		go gtm.UpdateGPU(app, true, gtm.Cfg.UpdateInterval)
+		go gtm.UpdateGPUTemp(app, true, gtm.Cfg.UpdateInterval)
 	}
-	go ui.UpdateMemory(app, true, gtm.Cfg.UpdateInterval)
-	go ui.UpdateNetwork(app, true, gtm.Cfg.UpdateInterval)
-	go ui.UpdateProcesses(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateMemory(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateNetwork(app, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateProcesses(app, true, gtm.Cfg.UpdateInterval)
 
 	slog.Info("Waiting for goroutines to start up ...")
 	time.Sleep(40 * time.Millisecond) // wait to start up all the goroutines
