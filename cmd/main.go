@@ -31,8 +31,9 @@ type LayoutMain struct {
 }
 
 var (
-	fMain  *tview.Flex
-	layout *LayoutMain
+	fMain   *tview.Flex
+	layout  *LayoutMain
+	cpuInfo *gtm.CPU
 )
 
 func init() {
@@ -54,11 +55,15 @@ func init() {
 	}
 
 	// Seed the initial values & data before setting up the rest of the app
-	gtm.GetCPUInfo()
-	gtm.GetDiskInfo()
-	gtm.GetGPUInfo()
 	gtm.GetHostInfo()
-	gtm.GetMemoryInfo()
+	// We're assigning a variable here to cpuInfo to use when setting up the PARENT
+	//	CPU box's title within the main() function
+	cpuInfo = gtm.GetCPUInfo()
+	// gtm.GetCPUStats()
+	gtm.GetDisksStats()
+	gtm.GetGPUStats()
+	// gtm.GetGPUStats()
+	gtm.GetMemoryStats()
 	gtm.GetNetworkInfo()
 
 	// Initialize the main layout ASAP
@@ -92,7 +97,9 @@ func setupLayout() {
 
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
-	cpuParentBox.SetBorder(true).SetTitle(" " + gtm.GetCPUModel(true) + " ")
+	cpuParentBox.SetBorder(true)
+	cpuParentBox.SetTitle(" " + cpuInfo.CPUModel(true) + " ")
+
 	flexRow1.AddItem(cpuParentBox.
 		AddItem(layout.CPU.Stats, 0, 5, false).
 		AddItem(layout.CPU.Temp, 0, 2, false),

@@ -38,13 +38,13 @@ const (
 	ZFS
 )
 
-type CPUInfo struct {
+type CPU struct {
 	Name        string
 	Vendor      string
 	SocketCount int
 }
 
-type CPUData struct{}
+type CPUStats struct{}
 
 type DiskInfo struct {
 	Mountpoint    string         `json:"mountpoint"`
@@ -57,12 +57,12 @@ type DiskInfo struct {
 	Total         uint64         `json:"total"`
 }
 
-type GPUInfo struct {
+type GPU struct {
 	Name   string
 	Vendor string
 }
 
-type GPUData struct {
+type GPUStats struct {
 	Id          int32   `json:"card-id"`
 	Load        float64 `json:"load"`
 	MemoryUsage float64 `json:"memoryUsage"`
@@ -72,11 +72,11 @@ type GPUData struct {
 }
 
 var (
-	cpuInfo  CPUInfo
-	cpuData  []CPUData
+	cpuInfo  *CPU
+	cpuStats []CPUStats
 	diskInfo []DiskInfo
-	gpuInfo  GPUInfo
-	gpuData  []GPUData
+	gpuInfo  GPU
+	gpuStats []GPUStats
 	hostInfo *host.InfoStat
 	memInfo  *mem.VirtualMemoryStat
 	netInfo  []net.IOCountersStat
@@ -111,7 +111,11 @@ func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	return result
 }
 
-func GetCPUInfo() CPUInfo {
+func GetCPUInfo() *CPU {
+	if cpuInfo != nil {
+		return cpuInfo
+	}
+
 	cInfo, err := cpu.Info()
 	if err != nil {
 		slog.Error("Failed to retrieve cpu.Info()! " + err.Error())
@@ -119,20 +123,23 @@ func GetCPUInfo() CPUInfo {
 	slog.Debug("cpu.Info(): "+cInfo[0].String(), "socketCount", len(cInfo))
 
 	// model name doesn't change with each syscall... so cache it here
-	cpuInfo = CPUInfo{
+	cpuInfo = &CPU{
 		Name:        cInfo[0].ModelName,
 		Vendor:      cInfo[0].VendorID,
 		SocketCount: len(cInfo),
 	}
-
 	return cpuInfo
 }
 
-func GetCPUModel(formatName bool) string {
-	if cpuInfo.Name == "" {
+func GetCPUStats() {
+
+}
+
+func (c *CPU) CPUModel(formatName bool) string {
+	if c.Name == "" {
 		GetCPUInfo()
 	}
-	cpuModel := cpuInfo.Name
+	cpuModel := c.Name
 	if formatName && cpuInfo.Vendor == "GenuineIntel" {
 		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
 		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
@@ -218,7 +225,7 @@ func isVirtualDisk(path string) bool {
 	}
 }
 
-func GetDiskInfo() []DiskInfo {
+func GetDisksStats() []DiskInfo {
 	if len(diskInfo) > 0 && time.Since(lastFetchDisk) < time.Minute {
 		return diskInfo
 	}
@@ -272,7 +279,7 @@ func HasGPU() bool {
 	return false
 }
 
-func (g *GPUData) String() string {
+func (g *GPUStats) String() string {
 	// NVIDIA always reports memory usage in MiB
 	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
 	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
@@ -283,23 +290,23 @@ func (g *GPUData) String() string {
 		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
 }
 
-func (g *GPUData) JSON(indent bool) string {
+func (g *GPUStats) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal indent JSON from struct GPUData{} ! " + err.Error())
+			slog.Error("Failed to marshal indent JSON from struct GPUStats{} ! " + err.Error())
 		}
 		return string(out)
 	} else {
 		out, err := json.Marshal(g)
 		if err != nil {
-			slog.Error("Failed to marshal JSON from struct GPUData{} ! " + err.Error())
+			slog.Error("Failed to marshal JSON from struct GPUStats{} ! " + err.Error())
 		}
 		return string(out)
 	}
 }
 
-func parseGPUNvidiaData(output []byte) []GPUData {
+func parseGPUNvidiaStats(output []byte) []GPUStats {
 	var (
 		id          int64
 		load        int64
@@ -340,7 +347,7 @@ func parseGPUNvidiaData(output []byte) []GPUData {
 				slog.Error("Failed to parse float: temp !" + err.Error())
 			}
 
-			gpu := GPUData{
+			gpu := GPUStats{
 				Id:          int32(id),
 				Load:        float64(load) / 100,
 				MemoryUsage: memoryUsage,
@@ -348,20 +355,20 @@ func parseGPUNvidiaData(output []byte) []GPUData {
 				Power:       power,
 				Temperature: int32(temp),
 			}
-			gpuData = append(gpuData, gpu)
+			gpuStats = append(gpuStats, gpu)
 		}
 	}
-	return gpuData
+	return gpuStats
 }
 
-func GetGPUInfo() []GPUData {
+func GetGPUStats() []GPUStats {
 	if !HasGPU() {
 		return nil
 	}
 
 	// Limit getting device data to just once a second, and NOT with every UI update
-	if time.Since(lastFetchGPU) <= time.Second && len(gpuData) > 0 {
-		return gpuData
+	if time.Since(lastFetchGPU) <= time.Second && len(gpuStats) > 0 {
+		return gpuStats
 	}
 
 	switch gpuInfo.Vendor {
@@ -377,9 +384,9 @@ func GetGPUInfo() []GPUData {
 			return nil
 		}
 		//slog.Debug(data[len(data)-1].String())
-		gpuData = parseGPUNvidiaData(data)
+		gpuStats = parseGPUNvidiaStats(data)
 		lastFetchGPU = time.Now()
-		return gpuData
+		return gpuStats
 	case "amd":
 		// TODO: write rocm-smi code for AMD gpu detection and data parsing
 		slog.Error("AMD GPU not implemented yet !")
@@ -417,7 +424,7 @@ func GetHostname() string {
 	}
 }
 
-func GetMemoryInfo() *mem.VirtualMemoryStat {
+func GetMemoryStats() *mem.VirtualMemoryStat {
 	if time.Since(lastFetchMem) < time.Second && len(memInfo.String()) > 0 {
 		return memInfo
 	}
@@ -439,7 +446,7 @@ func GetMemoryInfo() *mem.VirtualMemoryStat {
 
 	if oldUsedPercent == currentUsedPercent {
 		// If we get the same results, just re-send the same data without updates
-		//slog.Debug("gtm.GetMemoryInfo(): no changes... return last fetch")
+		//slog.Debug("gtm.GetMemoryStats(): no changes... return last fetch")
 		return memInfo
 	} else {
 		//  If the previous fetch is greater than or less than the last fetch in

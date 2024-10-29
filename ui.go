@@ -194,7 +194,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 	for {
 		timestamp := time.Now()
 
-		diskInfo = GetDiskInfo()
+		diskInfo = GetDisksStats()
 		boxText = ""
 
 		for _, dsk := range diskInfo {
@@ -240,18 +240,18 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 		timestamp := time.Now()
 		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
-		gpuData = GetGPUInfo()
-		lastElement := len(gpuData) - 1
+		gpuStats = GetGPUStats()
+		lastElement := len(gpuStats) - 1
 		/// END DATA FETCH
 
-		gpuLoadStr := strconv.FormatInt(int64(gpuData[lastElement].Load*100.0), 10) + "%"
+		gpuLoadStr := strconv.FormatInt(int64(gpuStats[lastElement].Load*100.0), 10) + "%"
 		gpuLoadTitleRow := buildBoxTitleRow("Load:", gpuLoadStr, width, " ")
 
-		gpuMemoryUsageRatio := gpuData[lastElement].MemoryUsage / gpuData[lastElement].MemoryTotal
+		gpuMemoryUsageRatio := gpuStats[lastElement].MemoryUsage / gpuStats[lastElement].MemoryTotal
 		gpuMemoryStr := strconv.FormatInt(int64(gpuMemoryUsageRatio*100), 10) + "%"
 		gpuMemoryTitleRow := buildBoxTitleRow("Mem:", gpuMemoryStr, width, " ")
 
-		boxText = gpuLoadTitleRow + buildProgressBar(gpuData[lastElement].Load, width, GREEN, WHITE)
+		boxText = gpuLoadTitleRow + buildProgressBar(gpuStats[lastElement].Load, width, GREEN, WHITE)
 		boxText += "\n" // add an extra line gap to visually and obviously separate the info
 		boxText += gpuMemoryTitleRow + buildProgressBar(gpuMemoryUsageRatio, width, GREEN, WHITE)
 
@@ -278,15 +278,15 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 		timestamp := time.Now()
 		width, height, _ = getInnerBoxSize(box.Box, width, height)
 
-		gpuData = GetGPUInfo()
-		lastElement := len(gpuData) - 1
+		gpuStats = GetGPUStats()
+		lastElement := len(gpuStats) - 1
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
-		gpuTempStr := strconv.Itoa(int(gpuData[lastElement].Temperature)) + "°C"
+		gpuTempStr := strconv.Itoa(int(gpuStats[lastElement].Temperature)) + "°C"
 		gpuTempTitle := buildBoxTitleRow("Temp:", gpuTempStr, width, " ")
 
 		boxText = gpuTempTitle + buildProgressBar(
-			float64(gpuData[lastElement].Temperature)/100.0, width, GREEN, WHITE)
+			float64(gpuStats[lastElement].Temperature)/100.0, width, GREEN, WHITE)
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
@@ -313,7 +313,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, 
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		memInfo = GetMemoryInfo()
+		memInfo = GetMemoryStats()
 		/// END DATA FETCH
 
 		memUsed := ConvertBytesToGiB(memInfo.Used, false)
