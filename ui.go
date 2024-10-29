@@ -233,7 +233,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 	)
 
 	box.SetDynamicColors(true)
-	box.SetBorder(showBorder).SetTitle(" " + GetGPUName() + " ")
+	box.SetBorder(showBorder).SetTitle(" " + GPUName() + " ")
 	slog.Info("Starting `UpdateGPU()` UI goroutine ...")
 
 	for {
