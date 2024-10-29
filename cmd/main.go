@@ -31,9 +31,9 @@ type LayoutMain struct {
 }
 
 var (
-	fMain   *tview.Flex
-	layout  *LayoutMain
-	cpuInfo *gtm.CPU
+	fMain  *tview.Flex
+	layout *LayoutMain
+	hasGPU bool
 )
 
 func init() {
@@ -53,16 +53,17 @@ func init() {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
+	hasGPU = gtm.HasGPU()
 
 	// Seed the initial values & data before setting up the rest of the app
 	gtm.GetHostInfo()
-	// We're assigning a variable here to cpuInfo to use when setting up the PARENT
-	//	CPU box's title within the main() function
-	cpuInfo = gtm.GetCPUInfo()
+	gtm.GetCPUInfo()
 	// gtm.GetCPUStats()
 	gtm.GetDisksStats()
-	gtm.GetGPUStats()
-	// gtm.GetGPUStats()
+	if hasGPU {
+		gtm.GetGPUStats()
+		// gtm.GetGPUStats()
+	}
 	gtm.GetMemoryStats()
 	gtm.GetNetworkInfo()
 
@@ -72,14 +73,16 @@ func init() {
 			Stats: tview.NewTextView(),
 			Temp:  tview.NewTextView(),
 		},
-		Disk: tview.NewTextView(),
-		GPU: &GPUBox{
-			Stats: tview.NewTextView(),
-			Temp:  tview.NewTextView(),
-		},
+		Disk:      tview.NewTextView(),
 		Memory:    tview.NewTextView(),
 		Network:   tview.NewTextView(),
 		Processes: tview.NewTable(),
+	}
+	if hasGPU {
+		layout.GPU = &GPUBox{
+			Stats: tview.NewTextView(),
+			Temp:  tview.NewTextView(),
+		}
 	}
 }
 
@@ -98,7 +101,7 @@ func setupLayout() {
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
 	cpuParentBox.SetBorder(true)
-	cpuParentBox.SetTitle(" " + cpuInfo.CPUModel(true) + " ")
+	cpuParentBox.SetTitle(" " + gtm.CPUModel(true) + " ")
 
 	flexRow1.AddItem(cpuParentBox.
 		AddItem(layout.CPU.Stats, 0, 5, false).
@@ -120,7 +123,7 @@ func setupLayout() {
 		AddItem(layout.Network, 0, 2, false).
 		AddItem(layout.Disk, 0, 2, false),
 		0, 1, false)
-	if gtm.HasGPU() {
+	if hasGPU {
 		// ROW 2 COLUMN 3
 		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(layout.GPU.Stats, 0, 4, false).
@@ -162,7 +165,7 @@ func main() {
 	go gtm.UpdateCPU(app, layout.CPU.Stats, false, gtm.Cfg.UpdateInterval)
 	go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true, gtm.Cfg.UpdateInterval)
 	go gtm.UpdateDisk(app, layout.Disk, true, gtm.Cfg.UpdateInterval)
-	if gtm.HasGPU() {
+	if hasGPU {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
 		go gtm.UpdateGPU(app, layout.GPU.Stats, true, gtm.Cfg.UpdateInterval)
 		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true, gtm.Cfg.UpdateInterval)

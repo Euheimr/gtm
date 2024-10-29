@@ -92,7 +92,10 @@ var (
 	lastFetchProc time.Time
 )
 
-var hostname string
+var (
+	hasGPU   bool
+	hostname string
+)
 
 func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIGABYTE
@@ -267,16 +270,23 @@ func GetDisksStats() []DiskInfo {
 }
 
 func HasGPU() bool {
+	// Booleans initialize to false. If hasGPU is true, then we have checked already.
+	//	Just return the true value instead of calling GPU utils again
+	if hasGPU {
+		return hasGPU
+	}
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
 		gpuInfo.Vendor = "nvidia"
-		return true
+		hasGPU = true
+		return hasGPU
 	}
 	if err := exec.Command("rocm-smi").Run(); err == nil {
 		gpuInfo.Vendor = "amd"
-		return true
+		hasGPU = true
+		return hasGPU
 	}
 	slog.Error("HasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
-	return false
+	return hasGPU
 }
 
 func (g *GPUStats) String() string {
@@ -362,10 +372,6 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 }
 
 func GetGPUStats() []GPUStats {
-	if !HasGPU() {
-		return nil
-	}
-
 	// Limit getting device data to just once a second, and NOT with every UI update
 	if time.Since(lastFetchGPU) <= time.Second && len(gpuStats) > 0 {
 		return gpuStats
@@ -392,10 +398,11 @@ func GetGPUStats() []GPUStats {
 		slog.Error("AMD GPU not implemented yet !")
 		lastFetchGPU = time.Now()
 	}
-	return nil
+
+	return []GPUStats{}
 }
 
-func GetGPUName() string { return gpuInfo.Name }
+func GPUName() string { return gpuInfo.Name }
 
 func GetHostInfo() *host.InfoStat {
 	if time.Since(lastFetchHost) < time.Second && len(hostInfo.String()) > 0 {
