@@ -138,11 +138,11 @@ func GetCPUStats() {
 
 }
 
-func (c *CPU) CPUModel(formatName bool) string {
-	if c.Name == "" {
+func CPUModel(formatName bool) string {
+	if cpuInfo.Name == "" {
 		GetCPUInfo()
 	}
-	cpuModel := c.Name
+	cpuModel := cpuInfo.Name
 	if formatName && cpuInfo.Vendor == "GenuineIntel" {
 		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
 		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
