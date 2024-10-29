@@ -46,7 +46,7 @@ type CPU struct {
 
 type CPUStats struct{}
 
-type DiskInfo struct {
+type DiskStats struct {
 	Mountpoint    string         `json:"mountpoint"`
 	Device        string         `json:"device"`
 	FSType        FileSystemType `json:"fstype"`
@@ -72,14 +72,14 @@ type GPUStats struct {
 }
 
 var (
-	cpuInfo  *CPU
-	cpuStats []CPUStats
-	diskInfo []DiskInfo
-	gpuInfo  GPU
-	gpuStats []GPUStats
-	hostInfo *host.InfoStat
-	memInfo  *mem.VirtualMemoryStat
-	netInfo  []net.IOCountersStat
+	cpuInfo    *CPU
+	cpuStats   []CPUStats
+	disksStats []DiskStats
+	gpuInfo    GPU
+	gpuStats   []GPUStats
+	hostInfo   *host.InfoStat
+	memInfo    *mem.VirtualMemoryStat
+	netInfo    []net.IOCountersStat
 )
 
 var (
@@ -228,17 +228,18 @@ func isVirtualDisk(path string) bool {
 	}
 }
 
-func GetDisksStats() []DiskInfo {
-	if len(diskInfo) > 0 && time.Since(lastFetchDisk) < time.Minute {
-		return diskInfo
+func GetDisksStats() []DiskStats {
+	if len(disksStats) > 0 && time.Since(lastFetchDisk) < time.Minute {
+		return disksStats
 	}
 
 	dInfo, err := disk.Partitions(false)
 	if err != nil {
 		slog.Error("Failed to retrieve disk.Partitions()! " + err.Error())
 	}
+	lastFetchDisk = time.Now()
 
-	diskInfo = make([]DiskInfo, len(dInfo))
+	disksStats = make([]DiskStats, len(dInfo))
 	for i, dsk := range dInfo {
 		usage, err := disk.Usage(dsk.Mountpoint)
 		if err != nil {
@@ -253,7 +254,7 @@ func GetDisksStats() []DiskInfo {
 		isVDisk := isVirtualDisk(dsk.Mountpoint)
 		usedPercent := math.Round((usage.UsedPercent*100)/100) / 100
 
-		info := DiskInfo{
+		stats := DiskStats{
 			Mountpoint:    dsk.Mountpoint,
 			Device:        dsk.Device,
 			FSType:        fsType,
@@ -263,10 +264,9 @@ func GetDisksStats() []DiskInfo {
 			UsedPercent:   usedPercent,
 			Total:         usage.Total,
 		}
-		diskInfo[i] = info
+		disksStats[i] = stats
 	}
-	lastFetchDisk = time.Now()
-	return diskInfo
+	return disksStats
 }
 
 func HasGPU() bool {

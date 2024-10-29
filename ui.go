@@ -194,10 +194,10 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 	for {
 		timestamp := time.Now()
 
-		diskInfo = GetDisksStats()
+		disksStats = GetDisksStats()
 		boxText = ""
 
-		for _, dsk := range diskInfo {
+		for _, dsk := range disksStats {
 			var diskCapacityStr string
 			diskCapacity := ConvertBytesToGiB(dsk.Total, false)
 			if diskCapacity < 999 {
