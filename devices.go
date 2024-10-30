@@ -413,12 +413,12 @@ func GetHostInfo() *host.InfoStat {
 	if err != nil {
 		slog.Error("Failed to retrieve host.Info()! " + err.Error())
 	}
+	lastFetchHost = time.Now()
 
 	hostInfo = hInfo
 	slog.Debug("host.Info(): " + hostInfo.String())
 	hostname = hostInfo.Hostname
 
-	lastFetchHost = time.Now()
 	return hostInfo
 }
 
@@ -473,6 +473,7 @@ func GetNetworkInfo() []net.IOCountersStat {
 	if err != nil {
 		slog.Error("Failed to retrieve net.IOCounters()! " + err.Error())
 	}
+	lastFetchNet = time.Now()
 
 	netInfo = nInfo
 	for i, iface := range netInfo {
@@ -480,6 +481,5 @@ func GetNetworkInfo() []net.IOCountersStat {
 			iface.String())
 	}
 
-	lastFetchNet = time.Now()
 	return netInfo
 }
