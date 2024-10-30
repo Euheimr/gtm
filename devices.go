@@ -373,7 +373,7 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 
 func GetGPUStats() []GPUStats {
 	// Limit getting device data to just once a second, and NOT with every UI update
-	if time.Since(lastFetchGPU) <= time.Second && len(gpuStats) > 0 {
+	if gpuStats != nil && time.Since(lastFetchGPU) <= time.Second {
 		return gpuStats
 	}
 
