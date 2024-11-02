@@ -1,6 +1,7 @@
 package gtm
 
 import (
+	"context"
 	"github.com/rivo/tview"
 	"log/slog"
 	"math"
@@ -157,6 +158,8 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateCPU() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -182,6 +185,8 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateCPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -230,6 +235,8 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateDisk() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -270,6 +277,8 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateGPU() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -303,6 +312,8 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateGPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -345,6 +356,8 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, 
 			box.SetText(boxText)
 
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateMemory() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 
@@ -381,6 +394,8 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool,
 		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
+		slog.Log(context.Background(), LEVEL_PERF,
+			"UpdateNetwork() time: "+(time.Since(timestamp)-update).String())
 	}
 }
 

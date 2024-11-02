@@ -45,6 +45,7 @@ const (
 )
 
 const TIME_FORMAT = "[15:04:05.000]"
+const LEVEL_PERF = slog.Level(-1)
 
 func colorize(colorCode int, v string) string {
 	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
@@ -208,23 +209,42 @@ func SetupFileLogging() {
 		opts        *slog.HandlerOptions
 		logLevelStr string
 	)
+	opts = &slog.HandlerOptions{}
 
-	if Cfg.Debug && Cfg.TraceFunctionLogging {
-		opts = &slog.HandlerOptions{
-			AddSource: true,
-			Level:     slog.LevelDebug,
-			//ReplaceAttr: nil,
-		}
-	} else if Cfg.Debug {
-		opts = &slog.HandlerOptions{
-			AddSource: false,
-			Level:     slog.LevelDebug,
-		}
+	if Cfg.TraceFunctionLogging {
+		opts.AddSource = true
 	} else {
-		opts = &slog.HandlerOptions{
-			AddSource: false,
-			Level:     slog.LevelInfo,
+		opts.AddSource = false
+	}
+
+	if Cfg.Debug {
+		opts.Level = slog.LevelDebug
+	} else {
+		opts.Level = slog.LevelInfo
+	}
+
+	if Cfg.PerformanceTest {
+		opts.Level = LEVEL_PERF
+	}
+
+	opts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
+		if a.Key == slog.LevelKey {
+			level := a.Value.Any().(slog.Level)
+
+			switch level {
+			case slog.LevelDebug:
+				a.Value = slog.StringValue("DEBUG")
+			case LEVEL_PERF:
+				a.Value = slog.StringValue("PERF")
+			case slog.LevelInfo:
+				a.Value = slog.StringValue("INFO")
+			case slog.LevelWarn:
+				a.Value = slog.StringValue("WARN")
+			case slog.LevelError:
+				a.Value = slog.StringValue("ERROR")
+			}
 		}
+		return a
 	}
 
 	cwd, err := os.Getwd()
@@ -256,6 +276,8 @@ func SetupFileLogging() {
 		logLevelStr = "debug"
 	case slog.LevelInfo:
 		logLevelStr = "info"
+	case LEVEL_PERF:
+		logLevelStr = "perf"
 	case slog.LevelWarn:
 		logLevelStr = "warn"
 	case slog.LevelError:

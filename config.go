@@ -10,6 +10,7 @@ import (
 
 type ConfigVars struct {
 	Debug                bool
+	PerformanceTest      bool
 	DeleteOldLogs        bool
 	TraceFunctionLogging bool
 	UpdateInterval       time.Duration
@@ -18,6 +19,7 @@ type ConfigVars struct {
 
 var CFG_DEFAULT = ConfigVars{
 	Debug:                false,
+	PerformanceTest:      false,
 	DeleteOldLogs:        false,
 	TraceFunctionLogging: false,
 	UpdateInterval:       500 * time.Millisecond,
@@ -41,6 +43,13 @@ func ReadConfig() {
 		} else {
 			slog.Error("Failed to parse boolean: DEBUG ... using default value: " +
 				strconv.FormatBool(CFG_DEFAULT.Debug))
+		}
+
+		if performanceTest, err := strconv.ParseBool(os.Getenv("PERFORMANCE_TEST")); err == nil {
+			Cfg.PerformanceTest = performanceTest
+		} else {
+			slog.Error("Failed to parse boolean: PERFORMANCE_TEST ... using default: " +
+				strconv.FormatBool(CFG_DEFAULT.PerformanceTest))
 		}
 
 		if deleteOldLogs, err := strconv.ParseBool(os.Getenv("DELETE_OLD_LOGS")); err == nil {
