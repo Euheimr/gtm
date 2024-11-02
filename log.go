@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -259,7 +261,10 @@ func SetupFileLogging() {
 		}
 	}
 
-	if err = os.Mkdir(logsDir, 0750); err != nil || os.IsNotExist(err) {
+	err = os.Mkdir(logsDir, 0750)
+	if errors.Is(err, fs.ErrExist) {
+		slog.Debug("Log directory exists")
+	} else if errors.Is(err, fs.ErrNotExist) {
 		slog.Error("Failed to create directory: " + logsDir + " !")
 	}
 
