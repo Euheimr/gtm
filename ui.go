@@ -171,7 +171,7 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
 	}
@@ -214,12 +214,12 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 			width, height, _ = getInnerBoxSize(box.Box, width, height)
 			boxText += buildBoxTitleRow(dsk.Mountpoint, diskCapacityStr, width, " ")
 			boxText += buildProgressBar(dsk.UsedPercent, width, RED, WHITE)
-			boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
+			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
 		}
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
 	}
@@ -259,7 +259,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
 	}
@@ -292,7 +292,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
 	}
@@ -332,7 +332,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, 
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			// TODO: do draw
 			box.SetText(boxText)
 
@@ -370,7 +370,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool,
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 			box.SetText(boxText)
 		})
 	}
@@ -388,7 +388,7 @@ func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool, 
 		// 	before sleeping
 
 		time.Sleep(update)
-		app.QueueUpdateDraw(func() {
+		app.QueueUpdate(func() {
 
 		})
 	}
