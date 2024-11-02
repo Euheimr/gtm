@@ -78,6 +78,13 @@ func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty s
 			}
 		}
 		countEmpty -= countFill
+	} else if ratio > 0.0 {
+		// If we are above 0% load/usage, then always show at least 1 character indicating
+		//	"used" or a "load"
+		barText += charUsed
+		// Also, we need to make sure the countEmpty is -1 to not overflow text to the next
+		//	line
+		countEmpty -= 1
 	}
 	// Add in the second color tag for the empty or "unused" portion of the bar
 	barText += colorEmpty
