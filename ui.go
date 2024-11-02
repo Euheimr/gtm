@@ -155,9 +155,17 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdateDraw(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateCPU() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -176,15 +184,23 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(box.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateCPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -206,6 +222,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 
 	for {
 		timestamp := time.Now()
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		disksStats = GetDisksStats()
 		boxText = ""
@@ -224,7 +241,6 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 			//boxText += dsk.Mountpoint + " | " + strconv.FormatBool(dsk.IsVirtualDisk) +
 			//	" | " + strconv.FormatFloat(dsk.UsedPercent, 'g', -1, 64) +
 			//	"% of " + diskCapacityStr + "\n"
-			width, height, _ = getInnerBoxSize(box.Box, width, height)
 			boxText += buildBoxTitleRow(dsk.Mountpoint, diskCapacityStr, width, " ")
 			boxText += buildProgressBar(dsk.UsedPercent, width, RED, WHITE)
 			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
@@ -232,9 +248,17 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateDisk() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -255,7 +279,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(box.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		gpuStats = GetGPUStats()
 		lastElement := len(gpuStats) - 1
@@ -274,9 +298,17 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateGPU() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -295,7 +327,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(box.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		gpuStats = GetGPUStats()
 		lastElement := len(gpuStats) - 1
@@ -309,9 +341,17 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateGPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -351,11 +391,17 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, 
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			// TODO: do draw
-			box.SetText(boxText)
-
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateMemory() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -376,7 +422,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool,
 
 	for {
 		timestamp := time.Now()
-		width, height, _ = getInnerBoxSize(box.Box, width, height)
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		netInfo = GetNetworkInfo()
 
@@ -391,9 +437,17 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool,
 
 		sleepWithTimestampDelta(timestamp, update, isResized)
 
-		app.QueueUpdate(func() {
-			box.SetText(boxText)
-		})
+		if isResized {
+			// Re-draw immediately if the window is resized
+			app.QueueUpdateDraw(func() {
+				box.SetText(boxText)
+			})
+		} else {
+			app.QueueUpdate(func() {
+				// TODO: do draw
+				box.SetText(boxText)
+			})
+		}
 		slog.Log(context.Background(), LEVEL_PERF,
 			"UpdateNetwork() time: "+(time.Since(timestamp)-update).String())
 	}
@@ -407,6 +461,7 @@ func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool, 
 	slog.Info("Starting `UpdateProcesses()` UI goroutine ...")
 
 	for {
+		//timestamp := time.Now()
 		// TODO: Get process info here then pass it into the app.QueueUpdateDraw()
 		// 	before sleeping
 
