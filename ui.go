@@ -201,9 +201,11 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 			var diskCapacityStr string
 			diskCapacity := ConvertBytesToGiB(dsk.Total, false)
 			if diskCapacity < 999 {
-				diskCapacityStr = strconv.FormatFloat(diskCapacity, 'f', 1, 64) + "GB"
+				diskCapacityStr = strconv.FormatFloat(
+					diskCapacity, 'f', 1, 64) + " GB"
 			} else {
-				diskCapacityStr = strconv.FormatFloat(diskCapacity/100.0, 'f', 1, 64) + "TB"
+				diskCapacityStr = strconv.FormatFloat(
+					diskCapacity/1000.0, 'f', 2, 64) + " TB"
 			}
 
 			//boxText += dsk.Mountpoint + " | " + strconv.FormatBool(dsk.IsVirtualDisk) +
