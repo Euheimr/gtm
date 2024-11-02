@@ -55,18 +55,19 @@ func sleepWithTimestampDelta(timestamp time.Time, update time.Duration, isResize
 func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty string) string {
 	var (
 		countFill  int    = 0
-		countEmpty        = columns   // default char count to total box columns
-		barText    string = colorFill // insert "used" color tag here
+		countEmpty        = columns   // default char count to total box columns (box width)
+		barText    string = colorFill // insert "used" / "load" color tag here
 		charUsed          = barSymbols[4]
 		charEmpty         = barSymbols[1]
 		charStart         = barSymbols[4]
 		charEnd           = barSymbols[1]
 	)
-	// We never want a ratio higher than 1.0 or the bar will overflow to the next line
+	// Never have a ratio higher than 1.0 (100%) or the bar will overflow to the next line
 	if ratio <= 1.0 {
 		countFill = int(math.Round(float64(columns) * ratio))
 	} else {
-		countFill = int(math.Round(float64(columns) * 1.0)) // Clamp the ratio to 1.0
+		// Clamp the ratio to 1.0 ONLY if above 1.0
+		countFill = int(math.Round(float64(columns) * 1.0))
 	}
 
 	if countFill >= 1 {
@@ -86,7 +87,7 @@ func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty s
 		//	line
 		countEmpty -= 1
 	}
-	// Add in the second color tag for the empty or "unused" portion of the bar
+	// Add in the second color tag for the "empty" or "unused" portion of the bar
 	barText += colorEmpty
 
 	// Iterate over an integer count of empty chars to add in the empty/unused part of
