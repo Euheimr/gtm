@@ -166,7 +166,7 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateCPU() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -201,7 +201,7 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateCPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -259,7 +259,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool, up
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateDisk() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -309,7 +309,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool, upd
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateGPU() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -352,7 +352,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool,
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateGPUTemp() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -402,7 +402,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool, 
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateMemory() time: "+(time.Since(timestamp)-update).String())
 	}
 }
@@ -448,7 +448,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool,
 				box.SetText(boxText)
 			})
 		}
-		slog.Log(context.Background(), LEVEL_PERF,
+		slog.Log(context.Background(), LevelPerf,
 			"UpdateNetwork() time: "+(time.Since(timestamp)-update).String())
 	}
 }

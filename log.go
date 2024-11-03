@@ -1,209 +1,17 @@
 package gtm
 
-/// This article was a nice guide to colorized terminal logging:
-// https://dusted.codes/creating-a-pretty-console-logger-using-gos-slog-package
-
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
-type Handler struct {
-	bytes   *bytes.Buffer
-	handler slog.Handler
-	mutex   *sync.Mutex
-}
-
-const (
-	reset = "\033[0m"
-	//black        = 30
-	//red          = 31
-	//green        = 32
-	//yellow       = 33
-	//blue         = 34
-	//magenta      = 35
-	cyan      = 36
-	lightGray = 37
-	darkGray  = 90
-	lightRed  = 91
-	//lightGreen   = 92
-	lightYellow = 93
-	//lightBlue    = 94
-	//lightMagenta = 95
-	//lightCyan    = 96
-	white = 97
-)
-
-const TIME_FORMAT = "[15:04:05.000]"
-const LEVEL_PERF = slog.Level(-1)
-
-func colorize(colorCode int, v string) string {
-	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
-}
-
-func (h *Handler) computeAttrs(ctx context.Context, record slog.Record) (map[string]any, error) {
-	h.mutex.Lock()
-
-	// Reset the buffer and release the mutex when everything is complete
-	defer func() {
-		h.bytes.Reset()
-		h.mutex.Unlock()
-	}()
-
-	if err := h.handler.Handle(ctx, record); err != nil {
-		return nil, fmt.Errorf("failed to call inner handler's Handle: %w", err)
-	}
-
-	var attrs map[string]any
-	err := json.Unmarshal(h.bytes.Bytes(), &attrs)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
-	}
-
-	return attrs, nil
-}
-
-func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.handler.Enabled(ctx, level)
-}
-
-func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
-	level := r.Level.String() + ":"
-
-	switch r.Level {
-	case slog.LevelDebug:
-		level = colorize(darkGray, level)
-	case slog.LevelInfo:
-		level = colorize(cyan, level)
-	case slog.LevelWarn:
-		level = colorize(lightYellow, level)
-	case slog.LevelError:
-		level = colorize(lightRed, level)
-	}
-
-	attrs, err := h.computeAttrs(ctx, r)
-	if err != nil {
-		return err
-	}
-
-	b, err := json.MarshalIndent(attrs, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshalling JSON attrs: %w", err)
-	}
-
-	fmt.Println(
-		colorize(lightGray, r.Time.Format(TIME_FORMAT)),
-		level,
-		colorize(white, r.Message),
-		colorize(darkGray, string(b)),
-	)
-
-	return nil
-}
-
-func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &Handler{
-		bytes:   h.bytes,
-		handler: h.handler.WithAttrs(attrs),
-		mutex:   h.mutex,
-	}
-}
-
-func (h *Handler) WithGroup(name string) slog.Handler {
-	return &Handler{
-		bytes:   h.bytes,
-		handler: h.handler.WithGroup(name),
-		mutex:   h.mutex,
-	}
-}
-
-func suppressDefaults(
-	next func([]string, slog.Attr) slog.Attr) func([]string, slog.Attr) slog.Attr {
-
-	return func(groups []string, a slog.Attr) slog.Attr {
-		// Since our handler already handles Time, Level and Message formatting, we need
-		//	to filter out these three slog attributes
-		if a.Key == slog.TimeKey ||
-			a.Key == slog.LevelKey ||
-			a.Key == slog.MessageKey {
-			return slog.Attr{}
-		}
-
-		if next == nil {
-			return a
-		}
-
-		return next(groups, a)
-	}
-}
-
-func NewHandler(opts *slog.HandlerOptions) *Handler {
-	if opts == nil {
-		opts = &slog.HandlerOptions{}
-	}
-	b := &bytes.Buffer{}
-	return &Handler{
-		bytes: b,
-		handler: slog.NewJSONHandler(b,
-			&slog.HandlerOptions{
-				AddSource: opts.AddSource,
-				Level:     opts.Level,
-				// we want to keep the ability to state what attributes we want to replace
-				//	when logging, so we just filter out Time, Level and Message (because
-				//	these are colorized) but keep all other attributes that we want to
-				//	remove or replace if stated
-				ReplaceAttr: suppressDefaults(opts.ReplaceAttr),
-			}),
-		mutex: &sync.Mutex{},
-	}
-}
-
-//func SetupLogging() {
-//	var opts *slog.HandlerOptions
-//
-//	if Cfg.Production && Cfg.Debug {
-//		opts = &slog.HandlerOptions{
-//			AddSource: true,
-//			Level:     slog.LevelInfo,
-//		}
-//	} else if Cfg.Debug {
-//		opts = &slog.HandlerOptions{
-//			AddSource: true,
-//			Level:     slog.LevelDebug,
-//		}
-//	} else if Cfg.Production {
-//		opts = &slog.HandlerOptions{
-//			AddSource: true,
-//			Level:     slog.LevelWarn,
-//		}
-//	}
-//
-//	//consoleLogger := slog.New(NewHandler(opts))
-//
-//	fHandler := slog.NewJSONHandler(os.Stdout, opts)
-//	fileLogger := slog.New(fHandler)
-//
-//	slog.SetDefault(fileLogger)
-//	//slog.SetLogLoggerLevel(slog.LevelDebug)
-//
-//	slog.Debug("Initialized logging")
-//	//slog.Debug("debug test")
-//	//slog.Info("info test")
-//	//slog.Warn("warn test")
-//	//slog.Error("error test")
-//}
+const LevelPerf = slog.Level(-5)
 
 func SetupFileLogging() {
 	var (
@@ -219,14 +27,12 @@ func SetupFileLogging() {
 		opts.AddSource = false
 	}
 
-	if Cfg.Debug {
+	if Cfg.Debug && Cfg.PerformanceTest {
+		opts.Level = LevelPerf
+	} else if Cfg.Debug {
 		opts.Level = slog.LevelDebug
 	} else {
 		opts.Level = slog.LevelInfo
-	}
-
-	if Cfg.PerformanceTest {
-		opts.Level = LEVEL_PERF
 	}
 
 	opts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
@@ -236,7 +42,7 @@ func SetupFileLogging() {
 			switch level {
 			case slog.LevelDebug:
 				a.Value = slog.StringValue("DEBUG")
-			case LEVEL_PERF:
+			case LevelPerf:
 				a.Value = slog.StringValue("PERF")
 			case slog.LevelInfo:
 				a.Value = slog.StringValue("INFO")
@@ -277,12 +83,12 @@ func SetupFileLogging() {
 	timestampString = strings.ReplaceAll(timestampString, " ", "_")
 
 	switch opts.Level {
+	case LevelPerf:
+		logLevelStr = "perf"
 	case slog.LevelDebug:
 		logLevelStr = "debug"
 	case slog.LevelInfo:
 		logLevelStr = "info"
-	case LEVEL_PERF:
-		logLevelStr = "perf"
 	case slog.LevelWarn:
 		logLevelStr = "warn"
 	case slog.LevelError:
