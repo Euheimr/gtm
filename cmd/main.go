@@ -175,7 +175,7 @@ func main() {
 	go gtm.UpdateProcesses(app, layout.Processes, true, gtm.Cfg.UpdateInterval)
 
 	slog.Info("Waiting for goroutines to start up ...")
-	time.Sleep(40 * time.Millisecond) // wait to start up all the goroutines
+	time.Sleep(20 * time.Millisecond) // wait to start up all the goroutines
 
 	// START APP
 	slog.Info("Starting the app ...")
