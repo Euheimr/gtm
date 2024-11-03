@@ -27,7 +27,7 @@ func SetupFileLogging() {
 		opts.AddSource = false
 	}
 
-	if Cfg.Debug && Cfg.PerformanceTest {
+	if Cfg.Debug && Cfg.PerformanceLogging {
 		opts.Level = LevelPerf
 	} else if Cfg.Debug {
 		opts.Level = slog.LevelDebug
