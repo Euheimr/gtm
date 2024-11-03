@@ -75,7 +75,7 @@ var (
 	cpuInfo    *CPU
 	cpuStats   []CPUStats
 	disksStats []DiskStats
-	gpuInfo    GPU
+	gpuInfo    *GPU
 	gpuStats   []GPUStats
 	hostInfo   *host.InfoStat
 	memInfo    *mem.VirtualMemoryStat
@@ -96,6 +96,10 @@ var (
 	hasGPU   bool
 	hostname string
 )
+
+func init() {
+	gpuInfo = &GPU{}
+}
 
 func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIGABYTE
