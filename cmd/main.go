@@ -58,7 +58,7 @@ func init() {
 	// Seed the initial values & data before setting up the rest of the app
 	gtm.GetHostInfo()
 	gtm.GetCPUInfo()
-	// gtm.GetCPUStats()
+	gtm.GetCPUStats()
 	gtm.GetDisksStats()
 	if hasGPU {
 		gtm.GetGPUStats()
@@ -101,7 +101,7 @@ func setupLayout() {
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
 	cpuParentBox.SetBorder(true)
-	cpuParentBox.SetTitle(" " + gtm.CPUModel(true) + " ")
+	cpuParentBox.SetTitle(" " + gtm.GetCPUModelName() + " ")
 
 	flexRow1.AddItem(cpuParentBox.
 		AddItem(layout.CPU.Stats, 0, 5, false).

@@ -39,12 +39,16 @@ const (
 )
 
 type CPU struct {
-	Name        string
-	Vendor      string
-	SocketCount int
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+	Vendor        string `json:"vendor"`
+	CountPhysical int    `json:"count_physical"`
+	CountLogical  int    `json:"count_logical"`
 }
 
-type CPUStats struct{}
+type CPUStats struct {
+	UsagePercent float64
+}
 
 type DiskStats struct {
 	Mountpoint    string         `json:"mountpoint"`
@@ -72,7 +76,7 @@ type GPUStats struct {
 }
 
 var (
-	cpuInfo    *CPU
+	cpuInfo    []CPU
 	cpuStats   []CPUStats
 	disksStats []DiskStats
 	gpuInfo    *GPU
@@ -118,7 +122,7 @@ func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	return result
 }
 
-func GetCPUInfo() *CPU {
+func GetCPUInfo() []CPU {
 	if cpuInfo != nil {
 		return cpuInfo
 	}
@@ -127,34 +131,78 @@ func GetCPUInfo() *CPU {
 	if err != nil {
 		slog.Error("Failed to retrieve cpu.Info()! " + err.Error())
 	}
-	slog.Debug("cpu.Info(): "+cInfo[0].String(), "socketCount", len(cInfo))
-
-	// model name doesn't change with each syscall... so cache it here
-	cpuInfo = &CPU{
-		Name:        cInfo[0].ModelName,
-		Vendor:      cInfo[0].VendorID,
-		SocketCount: len(cInfo),
+	for _, c := range cInfo {
+		slog.Debug("cpu.Info(): "+c.String(), "socketCount", len(cInfo))
+		info := &CPU{
+			// model name doesn't change with each syscall... so cache it here
+			Name:          c.ModelName,
+			Vendor:        c.VendorID,
+			CountPhysical: int(c.Cores),
+			CountLogical:  0,
+		}
+		cpuInfo = append(cpuInfo, *info)
 	}
 	return cpuInfo
 }
 
-func GetCPUStats() {
-
-}
-
-func CPUModel(formatName bool) string {
-	if cpuInfo.Name == "" {
-		GetCPUInfo()
-	}
-	cpuModel := cpuInfo.Name
-	if formatName && cpuInfo.Vendor == "GenuineIntel" {
-		cpuModel = strings.ReplaceAll(cpuModel, "(R)", "")
-		cpuModel = strings.ReplaceAll(cpuModel, "(TM)", "")
-		cpuModel = strings.ReplaceAll(cpuModel, "CPU @ ", "@")
-		cpuModel = strings.ReplaceAll(cpuModel, "Core ", "")
+func formatCPUModelName(cpuName string) string {
+	if cpuInfo[0].Vendor == "GenuineIntel" {
+		cpuName = strings.ReplaceAll(cpuName, "(R)", "")
+		cpuName = strings.ReplaceAll(cpuName, "(TM)", "")
+		cpuName = strings.ReplaceAll(cpuName, "CPU @ ", "@")
+		cpuName = strings.ReplaceAll(cpuName, "Core ", "")
+		return cpuName
 	}
 	// TODO: format AMD & ARM ?
-	return cpuModel
+	return cpuName
+}
+
+func GetCPUModelName() string {
+	if cpuInfo == nil {
+		GetCPUInfo()
+	}
+	return formatCPUModelName(cpuInfo[0].Name)
+}
+
+func (c CPU) String() string {
+	return fmt.Sprintf(
+		"socket #%v, name=%s, vendor=%s, countPhys=%v, countLogical=%v",
+		c.Id, c.Name, c.Vendor, c.CountPhysical, c.CountLogical)
+}
+
+func (c CPU) JSON(indent bool) string {
+	if indent {
+		out, err := json.MarshalIndent(c, "", "  ")
+		if err != nil {
+			slog.Error("Failed to marshal indent JSON from struct CPU{} !" + err.Error())
+		}
+		return string(out)
+	} else {
+		out, err := json.Marshal(c)
+		if err != nil {
+			slog.Error("Failed to marshal JSON from struct CPU{} !" + err.Error())
+		}
+		return string(out)
+	}
+}
+
+func GetCPUStats() []CPUStats {
+	if len(cpuStats) > 0 && time.Since(lastFetchCPU) < time.Second {
+		return cpuStats
+	}
+	cpuPct, err := cpu.Percent(0, false)
+	if err != nil {
+		slog.Error("Failed to fetch cpu.Percent() !" + err.Error())
+	}
+	lastFetchCPU = time.Now()
+
+	stats := CPUStats{
+		UsagePercent: cpuPct[0],
+	}
+	// TODO: fetch cpu usage and append to data
+	cpuStats = append(cpuStats, stats)
+
+	return cpuStats
 }
 
 func convertFSType(fsType string) FileSystemType {

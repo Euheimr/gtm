@@ -158,6 +158,11 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
 		stats := GetCPUStats()
+		lastIndex := len(stats) - 1
+
+		boxText = "CPU load: " + strconv.FormatFloat(
+			stats[lastIndex].UsagePercent, 'f', 1, 64) + " %" + "\n"
+		boxText += "len of stats = " + strconv.Itoa(len(stats)) + "\n"
 
 		if isResized {
 			// Re-draw immediately if the window is resized
