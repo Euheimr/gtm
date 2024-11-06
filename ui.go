@@ -251,7 +251,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 			//	" | " + strconv.FormatFloat(dsk.UsedPercent, 'g', -1, 64) +
 			//	"% of " + diskCapacityStr + "\n"
 			boxText += buildBoxTitleRow(dsk.Mountpoint, diskCapacityStr, width, " ")
-			boxText += buildProgressBar(dsk.UsedPercent, width, RED, WHITE)
+			boxText += buildProgressBar(dsk.UsedPercent, width, BLUE, WHITE)
 			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
 		}
 
