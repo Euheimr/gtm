@@ -162,17 +162,17 @@ func main() {
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
-	go gtm.UpdateCPU(app, layout.CPU.Stats, false, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateDisk(app, layout.Disk, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateCPU(app, layout.CPU.Stats, false)
+	go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true)
+	go gtm.UpdateDisk(app, layout.Disk, true)
 	if hasGPU {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
-		go gtm.UpdateGPU(app, layout.GPU.Stats, true, gtm.Cfg.UpdateInterval)
-		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true, gtm.Cfg.UpdateInterval)
+		go gtm.UpdateGPU(app, layout.GPU.Stats, true)
+		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true)
 	}
-	go gtm.UpdateMemory(app, layout.Memory, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateNetwork(app, layout.Network, true, gtm.Cfg.UpdateInterval)
-	go gtm.UpdateProcesses(app, layout.Processes, true, gtm.Cfg.UpdateInterval)
+	go gtm.UpdateMemory(app, layout.Memory, true)
+	go gtm.UpdateNetwork(app, layout.Network, true)
+	go gtm.UpdateProcesses(app, layout.Processes, true)
 
 	slog.Info("Waiting for goroutines to start up ...")
 	time.Sleep(20 * time.Millisecond) // wait to start up all the goroutines
