@@ -53,7 +53,7 @@ type CPUStats struct {
 type DiskStats struct {
 	Mountpoint    string         `json:"mountpoint"`
 	Device        string         `json:"device"`
-	FSType        FileSystemType `json:"fstype"`
+	FSType        FileSystemType `json:"fs_type"`
 	IsVirtualDisk bool           `json:"is_virtual_disk"`
 	Free          uint64         `json:"free"`
 	Used          uint64         `json:"used"`
@@ -240,7 +240,8 @@ func isVirtualDisk(path string) bool {
 	case "windows":
 		d, err := windows.UTF16PtrFromString(path)
 		if err != nil {
-			slog.Error("Failed to get UTF16 pointer from string: " + path + "! " + err.Error())
+			slog.Error("Failed to get UTF16 pointer from string: " + path + "! " +
+				err.Error())
 		}
 		driveType := windows.GetDriveType(d)
 		//slog.Debug("drive " + path + ", type=" + strconv.FormatUint(uint64(driveType), 10))
@@ -257,11 +258,12 @@ func isVirtualDisk(path string) bool {
 			switch len(io) {
 			case 0:
 				// This is a VERY hacky way of working around detecting Google Drive.
-				//	GDrive is seen as a "real" drive in Windows for some reason, and not
-				//	as a RAMDISK (Virtual Hard Disk; aka. VHD).
+				//	GDrive is seen as a "real" drive in Windows for some reason, and
+				//	not as a RAMDISK (Virtual Hard Disk; aka. VHD).
 				// But if we try to call disk.IOCounters() on it, we will just get an
-				//	empty struct (length of 0) back, which indicates it IS a RAMDISK. This
-				//  is the only way I've been able to detect a mounted Google Drive :(
+				//	empty struct (length of 0) back, which indicates it IS a RAMDISK.
+				// This is the only way I've been able to detect a mounted Google
+				//	Drive :(
 				slog.Debug("drive " + path + " IS a RAMDISK")
 				return true
 			default:
