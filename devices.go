@@ -116,7 +116,8 @@ func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
 func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	result = float64(bytes) / GIBIBYTE
 	if rounded {
-		// effectively return an integer via rounding the float to an int (ie. "11.0" GiB)
+		// Effectively return an integer via rounding the float to an int
+		//	(ie. "11.0" GiB)
 		return math.RoundToEven(result)
 	}
 	return result
@@ -358,7 +359,8 @@ func (g *GPUStats) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal indent JSON from struct GPUStats{} ! " + err.Error())
+			slog.Error("Failed to marshal indent JSON from struct GPUStats{} ! " +
+				err.Error())
 		}
 		return string(out)
 	} else {
@@ -440,7 +442,8 @@ func GetGPUStats() []GPUStats {
 			"--format=csv,noheader,nounits")
 		data, err := cmd.Output()
 		if err != nil {
-			slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " + err.Error())
+			slog.Error("Failed to retrieve NVIDIA GPU data from nvidia-smi ! " +
+				err.Error())
 			return nil
 		}
 		//slog.Debug(data[len(data)-1].String())
@@ -497,7 +500,7 @@ func GetMemoryStats() *mem.VirtualMemoryStat {
 	lastFetchMem = time.Now()
 
 	if memInfo == nil {
-		// If this is the first time getting the memory usage, just populate/init memInfo
+		// This is the first time getting the memory usage; just populate/init memInfo
 		memInfo = mInfo
 		return memInfo
 	}
