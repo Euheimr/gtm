@@ -429,7 +429,7 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 
 func GetGPUStats() []GPUStats {
 	// Limit getting device data to just once a second, and NOT with every UI update
-	if gpuStats != nil && time.Since(lastFetchGPU) <= time.Second {
+	if time.Since(lastFetchGPU) < time.Second && gpuStats != nil {
 		return gpuStats
 	}
 
@@ -449,14 +449,13 @@ func GetGPUStats() []GPUStats {
 		//slog.Debug(data[len(data)-1].String())
 		gpuStats = parseGPUNvidiaStats(data)
 		lastFetchGPU = time.Now()
-		return gpuStats
+
 	case "amd":
 		// TODO: write rocm-smi code for AMD gpu detection and data parsing
 		slog.Error("AMD GPU not implemented yet !")
 		lastFetchGPU = time.Now()
 	}
-
-	return []GPUStats{}
+	return gpuStats
 }
 
 func GPUName() string { return gpuInfo.Name }
