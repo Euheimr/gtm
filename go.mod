@@ -1,17 +1,18 @@
 module gtm
 
-go 1.23.1
+go 1.23.2
 
 require (
+	github.com/euheimr/ringbuffer v0.0.0-20241121075221-1c4caa5710fa
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/joho/godotenv v1.5.1
-	github.com/rivo/tview v0.0.0-20241016194538-c5e4fb24af13
-	github.com/shirou/gopsutil/v4 v4.24.9
-	golang.org/x/sys v0.26.0
+	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
+	github.com/shirou/gopsutil/v4 v4.24.10
+	golang.org/x/sys v0.27.0
 )
 
 require (
-	github.com/ebitengine/purego v0.8.0 // indirect
+	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

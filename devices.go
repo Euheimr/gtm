@@ -3,6 +3,7 @@ package gtm
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/euheimr/ringbuffer"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
@@ -83,6 +84,14 @@ type GPUStats struct {
 	MemoryTotal float64 `json:"memoryTotal"`
 	Power       float64 `json:"power"`
 	Temperature int32   `json:"temperature"`
+}
+
+type GPURingBuffer struct {
+	Load        *ringbuffer.RingBuffer[float32]
+	MemoryUsage *ringbuffer.RingBuffer[float32]
+	MemoryTotal *ringbuffer.RingBuffer[float32]
+	Power       *ringbuffer.RingBuffer[float32]
+	Temperature *ringbuffer.RingBuffer[float32]
 }
 
 var (
