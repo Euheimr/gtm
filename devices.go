@@ -19,8 +19,8 @@ import (
 )
 
 // GIBIBYTE is the binary representation of gigabyte
-const GIBIBYTE = 1_073_741_824 // binary base 2^30 or 1024^3
-const GIGABYTE = 1_000_000_000 // decimal base 10^9
+const GIBIBYTE = 1_073_741_824 // Binary base 2^30 or 1024^3
+const GIGABYTE = 1_000_000_000 // Decimal base 10^9
 
 type FileSystemType int
 
@@ -36,6 +36,16 @@ const (
 	NTFS
 	JFS
 	ZFS
+)
+
+const (
+	CPU_STATS_UPDATE_INTERVAL  = time.Second
+	DISK_STATS_UPDATE_INTERVAL = time.Minute
+	GPU_STATS_UPDATE_INTERVAL  = time.Second
+	HOST_INFO_UPDATE_INTERVAL  = time.Second
+	MEM_STATS_UPDATE_INTERVAL  = time.Second
+	NET_STATS_UPDATE_INTERVAL  = time.Second
+	PROCS_UPDATE_INTERVAL      = time.Second
 )
 
 type CPU struct {
@@ -188,7 +198,7 @@ func (c CPU) JSON(indent bool) string {
 }
 
 func GetCPUStats() []CPUStats {
-	if len(cpuStats) > 0 && time.Since(lastFetchCPU) < time.Second {
+	if len(cpuStats) > 0 && time.Since(lastFetchCPU) < CPU_STATS_UPDATE_INTERVAL {
 		return cpuStats
 	}
 	cpuPct, err := cpu.Percent(0, false)
@@ -245,7 +255,6 @@ func isVirtualDisk(path string) bool {
 				err.Error())
 		}
 		driveType := windows.GetDriveType(d)
-		//slog.Debug("drive " + path + ", type=" + strconv.FormatUint(uint64(driveType), 10))
 
 		// 2: DRIVE_REMOVABLE 3: DRIVE_FIXED 4: DRIVE_REMOTE 5: DRIVE_CDROM 6: DRIVE_RAMDISK
 		switch driveType {
@@ -253,7 +262,7 @@ func isVirtualDisk(path string) bool {
 			slog.Debug(path + " is a RAMDISK")
 			return true
 		case windows.DRIVE_FIXED:
-			// disk.IOCounters(C:) ALWAYS errors out on Windows, BUT we do not get an
+			// disk.IOCounters(C:) ALWAYS errors out on Windows, HOWEVER, we do not get an
 			//	empty struct on a valid DRIVE_FIXED device
 			io, _ := disk.IOCounters(path)
 			switch len(io) {
@@ -284,7 +293,7 @@ func isVirtualDisk(path string) bool {
 }
 
 func GetDisksStats() []DiskStats {
-	if len(disksStats) > 0 && time.Since(lastFetchDisk) < time.Minute {
+	if time.Since(lastFetchDisk) < DISK_STATS_UPDATE_INTERVAL && len(disksStats) > 0 {
 		return disksStats
 	}
 
@@ -429,7 +438,7 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 
 func GetGPUStats() []GPUStats {
 	// Limit getting device data to just once a second, and NOT with every UI update
-	if time.Since(lastFetchGPU) < time.Second && gpuStats != nil {
+	if time.Since(lastFetchGPU) < GPU_STATS_UPDATE_INTERVAL && gpuStats != nil {
 		return gpuStats
 	}
 
@@ -461,7 +470,7 @@ func GetGPUStats() []GPUStats {
 func GPUName() string { return gpuInfo.Name }
 
 func GetHostInfo() *host.InfoStat {
-	if time.Since(lastFetchHost) < time.Second && len(hostInfo.String()) > 0 {
+	if time.Since(lastFetchHost) < HOST_INFO_UPDATE_INTERVAL && len(hostInfo.String()) > 0 {
 		return hostInfo
 	}
 
@@ -488,7 +497,7 @@ func GetHostname() string {
 }
 
 func GetMemoryStats() *mem.VirtualMemoryStat {
-	if time.Since(lastFetchMem) < time.Second && len(memInfo.String()) > 0 {
+	if time.Since(lastFetchMem) < MEM_STATS_UPDATE_INTERVAL && len(memInfo.String()) > 0 {
 		return memInfo
 	}
 
@@ -520,8 +529,8 @@ func GetMemoryStats() *mem.VirtualMemoryStat {
 	}
 }
 
-func GetNetworkInfo() []net.IOCountersStat {
-	if time.Since(lastFetchNet) < time.Second && len(netInfo) > 0 {
+func GetNetworkStats() []net.IOCountersStat {
+	if time.Since(lastFetchNet) < NET_STATS_UPDATE_INTERVAL && len(netInfo) > 0 {
 		return netInfo
 	}
 
