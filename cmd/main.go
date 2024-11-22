@@ -65,7 +65,7 @@ func init() {
 		// gtm.GetGPUStats()
 	}
 	gtm.GetMemoryStats()
-	gtm.GetNetworkInfo()
+	gtm.GetNetworkStats()
 
 	// Initialize the main layout ASAP
 	layout = &LayoutMain{
