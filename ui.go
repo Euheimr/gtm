@@ -429,7 +429,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		netInfo = GetNetworkInfo()
+		netInfo = GetNetworkStats()
 
 		boxText = GetHostname() + "\n"
 		//boxText += "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
