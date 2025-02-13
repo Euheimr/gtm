@@ -233,7 +233,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		disksStats = GetDisksStats()
+		disksStats = DisksStats()
 		boxText = ""
 
 		for _, dsk := range disksStats {
@@ -289,7 +289,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		gpuStats = GetGPUStats()
+		gpuStats = GPUStats()
 		lastElement := len(gpuStats) - 1
 		/// END DATA FETCH
 
@@ -336,7 +336,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		gpuStats = GetGPUStats()
+		gpuStats = GPUStats()
 		lastElement := len(gpuStats) - 1
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
@@ -380,7 +380,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		memInfo = GetMemoryStats()
+		memStats = MemoryStats()
 		/// END DATA FETCH
 
 		memUsed := ConvertBytesToGiB(memInfo.Used, false)
@@ -429,7 +429,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
-		netInfo = GetNetworkStats()
+		netInfo = NetworkStats()
 
 		boxText = GetHostname() + "\n"
 		//boxText += "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)

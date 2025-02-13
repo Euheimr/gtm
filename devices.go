@@ -57,11 +57,12 @@ type CPU struct {
 	CountLogical  int    `json:"count_logical"`
 }
 
-type CPUStats struct {
+type CPUStat struct {
 	UsagePercent float64
 }
 
-type DiskStats struct {
+// CPUTemp
+type DiskStat struct {
 	Mountpoint    string         `json:"mountpoint"`
 	Device        string         `json:"device"`
 	FSType        FileSystemType `json:"fs_type"`
@@ -77,7 +78,7 @@ type GPU struct {
 	Vendor string
 }
 
-type GPUStats struct {
+type GPUStat struct {
 	Id          int32   `json:"card-id"`
 	Load        float64 `json:"load"`
 	MemoryUsage float64 `json:"memoryUsage"`
@@ -96,12 +97,13 @@ type GPURingBuffer struct {
 
 var (
 	cpuInfo    []CPU
-	cpuStats   []CPUStats
-	disksStats []DiskStats
+	cpuStats   []CPUStat
+	cpuTemp    []float64
+	disksStats []DiskStat
 	gpuInfo    *GPU
-	gpuStats   []GPUStats
+	gpuStats   []GPUStat
 	hostInfo   *host.InfoStat
-	memInfo    *mem.VirtualMemoryStat
+	memStats   *mem.VirtualMemoryStat
 	netInfo    []net.IOCountersStat
 )
 
@@ -142,7 +144,7 @@ func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 	return result
 }
 
-func GetCPUInfo() []CPU {
+func CPUInfo() []CPU {
 	if cpuInfo != nil {
 		return cpuInfo
 	}
@@ -165,23 +167,19 @@ func GetCPUInfo() []CPU {
 	return cpuInfo
 }
 
-func formatCPUModelName(cpuName string) string {
+func CPUModelName() (cpuName string) {
+	if cpuInfo == nil {
+		CPUInfo()
+	}
 	if cpuInfo[0].Vendor == "GenuineIntel" {
-		cpuName = strings.ReplaceAll(cpuName, "(R)", "")
-		cpuName = strings.ReplaceAll(cpuName, "(TM)", "")
-		cpuName = strings.ReplaceAll(cpuName, "CPU @ ", "@")
-		cpuName = strings.ReplaceAll(cpuName, "Core ", "")
-		return cpuName
+		cpuName = strings.ReplaceAll(cpuInfo[0].Name, "(R)", "")
+		cpuName = strings.ReplaceAll(cpuInfo[0].Name, "(TM)", "")
+		cpuName = strings.ReplaceAll(cpuInfo[0].Name, "CPU @ ", "@")
+		cpuName = strings.ReplaceAll(cpuInfo[0].Name, "Core ", "")
 	}
 	// TODO: format AMD & ARM ?
-	return cpuName
-}
 
-func GetCPUModelName() string {
-	if cpuInfo == nil {
-		GetCPUInfo()
-	}
-	return formatCPUModelName(cpuInfo[0].Name)
+	return cpuName
 }
 
 func (c CPU) String() string {
@@ -206,7 +204,7 @@ func (c CPU) JSON(indent bool) string {
 	}
 }
 
-func GetCPUStats() []CPUStats {
+func GetCPUStats() []CPUStat {
 	if len(cpuStats) > 0 && time.Since(lastFetchCPU) < CPU_STATS_UPDATE_INTERVAL {
 		return cpuStats
 	}
@@ -216,7 +214,7 @@ func GetCPUStats() []CPUStats {
 	}
 	lastFetchCPU = time.Now()
 
-	stats := CPUStats{
+	stats := CPUStat{
 		UsagePercent: cpuPct[0],
 	}
 	// TODO: fetch cpu usage and append to data
@@ -301,7 +299,7 @@ func isVirtualDisk(path string) bool {
 	}
 }
 
-func GetDisksStats() []DiskStats {
+func DisksStats() []DiskStat {
 	if time.Since(lastFetchDisk) < DISK_STATS_UPDATE_INTERVAL && len(disksStats) > 0 {
 		return disksStats
 	}
@@ -312,7 +310,7 @@ func GetDisksStats() []DiskStats {
 	}
 	lastFetchDisk = time.Now()
 
-	disksStats = make([]DiskStats, len(dInfo))
+	disksStats = make([]DiskStat, len(dInfo))
 	for i, dsk := range dInfo {
 		usage, err := disk.Usage(dsk.Mountpoint)
 		if err != nil {
@@ -327,7 +325,7 @@ func GetDisksStats() []DiskStats {
 		isVDisk := isVirtualDisk(dsk.Mountpoint)
 		usedPercent := math.Round((usage.UsedPercent*100)/100) / 100
 
-		stats := DiskStats{
+		stats := DiskStat{
 			Mountpoint:    dsk.Mountpoint,
 			Device:        dsk.Device,
 			FSType:        fsType,
@@ -362,7 +360,7 @@ func HasGPU() bool {
 	return hasGPU
 }
 
-func (g *GPUStats) String() string {
+func (g *GPUStat) String() string {
 	// NVIDIA always reports memory usage in MiB
 	memoryUsageGiB := fmt.Sprintf("%.0f", g.MemoryUsage) ///1024)
 	memoryTotalGiB := fmt.Sprintf("%.0f", g.MemoryTotal) ///1024)
@@ -373,24 +371,24 @@ func (g *GPUStats) String() string {
 		g.Id, int(g.Load*100), memoryUsageGiB, memoryTotalGiB, g.Power, g.Temperature)
 }
 
-func (g *GPUStats) JSON(indent bool) string {
+func (g *GPUStat) JSON(indent bool) string {
 	if indent {
 		out, err := json.MarshalIndent(g, "", "  ")
 		if err != nil {
-			slog.Error("Failed to marshal indent JSON from struct GPUStats{} ! " +
+			slog.Error("Failed to marshal indent JSON from struct GPUStat{} ! " +
 				err.Error())
 		}
 		return string(out)
 	} else {
 		out, err := json.Marshal(g)
 		if err != nil {
-			slog.Error("Failed to marshal JSON from struct GPUStats{} ! " + err.Error())
+			slog.Error("Failed to marshal JSON from struct GPUStat{} ! " + err.Error())
 		}
 		return string(out)
 	}
 }
 
-func parseGPUNvidiaStats(output []byte) []GPUStats {
+func parseGPUNvidiaStats(output []byte) []GPUStat {
 	var (
 		id          int64
 		load        int64
@@ -431,7 +429,7 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 				slog.Error("Failed to parse float: temp !" + err.Error())
 			}
 
-			gpu := GPUStats{
+			gpu := GPUStat{
 				Id:          int32(id),
 				Load:        float64(load) / 100,
 				MemoryUsage: memoryUsage,
@@ -445,7 +443,7 @@ func parseGPUNvidiaStats(output []byte) []GPUStats {
 	return gpuStats
 }
 
-func GetGPUStats() []GPUStats {
+func GPUStats() []GPUStat {
 	// Limit getting device data to just once a second, and NOT with every UI update
 	if time.Since(lastFetchGPU) < GPU_STATS_UPDATE_INTERVAL && gpuStats != nil {
 		return gpuStats
@@ -478,7 +476,7 @@ func GetGPUStats() []GPUStats {
 
 func GPUName() string { return gpuInfo.Name }
 
-func GetHostInfo() *host.InfoStat {
+func HostInfo() *host.InfoStat {
 	if time.Since(lastFetchHost) < HOST_INFO_UPDATE_INTERVAL && len(hostInfo.String()) > 0 {
 		return hostInfo
 	}
@@ -496,49 +494,49 @@ func GetHostInfo() *host.InfoStat {
 	return hostInfo
 }
 
-func GetHostname() string {
+func Hostname() string {
 	if hostname != "" {
 		return hostname
 	} else {
-		GetHostInfo()
+		HostInfo()
 		return hostname
 	}
 }
 
-func GetMemoryStats() *mem.VirtualMemoryStat {
-	if time.Since(lastFetchMem) < MEM_STATS_UPDATE_INTERVAL && len(memInfo.String()) > 0 {
-		return memInfo
+func MemoryStats() *mem.VirtualMemoryStat {
+	if time.Since(lastFetchMem) < MEM_STATS_UPDATE_INTERVAL && len(memStats.String()) > 0 {
+		return memStats
 	}
 
-	mInfo, err := mem.VirtualMemory()
+	mStats, err := mem.VirtualMemory()
 	if err != nil {
 		slog.Error("Failed to retrieve mem.VirtualMemory()! " + err.Error())
 	}
 	lastFetchMem = time.Now()
 
-	if memInfo == nil {
-		// This is the first time getting the memory usage; just populate/init memInfo
-		memInfo = mInfo
-		return memInfo
+	if memStats == nil {
+		// This is the first time getting the memory usage; just populate/init memStats
+		memStats = mStats
+		return memStats
 	}
 
-	oldUsedPercent := memInfo.UsedPercent
-	currentUsedPercent := mInfo.UsedPercent
+	oldUsedPercent := memStats.UsedPercent
+	currentUsedPercent := mStats.UsedPercent
 
 	if oldUsedPercent == currentUsedPercent {
 		// If we get the same results, just re-send the same data without updates
-		//slog.Debug("gtm.GetMemoryStats(): no changes... return last fetch")
-		return memInfo
+		//slog.Debug("gtm.MemoryStats(): no changes... return last fetch")
+		return memStats
 	} else {
 		//  If the previous fetch is greater than or less than the last fetch in
 		// 	Gigabytes, return the updated memory usage
-		memInfo = mInfo
-		slog.Debug("mem.VirtualMemory(): " + memInfo.String())
-		return memInfo
+		memStats = mStats
+		slog.Debug("mem.VirtualMemory(): " + memStats.String())
+		return memStats
 	}
 }
 
-func GetNetworkStats() []net.IOCountersStat {
+func NetworkStats() []net.IOCountersStat {
 	if time.Since(lastFetchNet) < NET_STATS_UPDATE_INTERVAL && len(netInfo) > 0 {
 		return netInfo
 	}
