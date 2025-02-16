@@ -158,7 +158,7 @@ func insertCenterSpacing(arg1 string, arg2 string, boxWidth int,
 	return spaces
 }
 
-func buildBoxTitleRow(title string, statStr string, boxWidth int, spaceChar string) string {
+func buildBoxTitleStatRow(title string, statStr string, boxWidth int, spaceChar string) string {
 	return title + insertCenterSpacing(title, statStr, boxWidth, spaceChar) + statStr + "\n"
 }
 
