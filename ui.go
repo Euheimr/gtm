@@ -327,7 +327,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		boxText       string
 		width, height int
 		isResized     bool
-		//disksVirtualStr []bool
+		oldDisksStats []DiskStat
 	)
 
 	box.SetDynamicColors(true)
@@ -339,9 +339,12 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		disksStats = DisksStats()
+		if oldDisksStats == nil {
+			oldDisksStats = disksStats
+		}
 		boxText = ""
 
-		for _, dsk := range disksStats {
+		for i, dsk := range disksStats {
 			var diskCapacityStr string
 			diskCapacity := ConvertBytesToGiB(dsk.Total, false)
 			if diskCapacity < 999 {
@@ -361,6 +364,13 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 
 			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
 		}
+
+		// TODO: SCROLLING TEXT - get number of new lines in the box text and then compare
+		// 	num of lines to height. Then, get the delta/difference between the height and
+		// 	number of lines. Scroll/remove 1 line at a time per second, and reset back to
+		// 	0 when the last line is reached
+
+		oldDisksStats = disksStats
 
 		if isResized {
 			// Re-draw immediately if the window is resized
