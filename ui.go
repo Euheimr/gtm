@@ -31,9 +31,12 @@ const (
 )
 
 var (
-	barSymbols  = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
-	treeSymbols = [4]string{"│", "├", "─", "└"}
-	update      = &Cfg.UpdateInterval
+	barSymbols       = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
+	treeSymbols      = [4]string{"│", "├", "─", "└"}
+	blockSymbols     = [4]string{"█", "▄", "■", "▀"}
+	lineSymbols      = [6]string{"│", "─", "┌", "┐", "└", "┘"}
+	directionSymbols = [8]string{"↑", "↓", "←", "→", "↖", "↗", "↘", "↙"}
+	update           = &Cfg.UpdateInterval
 )
 
 func sleepWithTimestampDelta(timestamp time.Time, isResized bool) {
