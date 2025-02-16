@@ -9,9 +9,11 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/sensors"
 	"golang.org/x/sys/windows"
 	"log/slog"
 	"math"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -61,7 +63,23 @@ type CPUStat struct {
 	UsagePercent float64
 }
 
-// CPUTemp
+// CPUTempStat
+// Reference: https://wutils.com/wmi/root/wmi/msacpi_thermalzonetemperature/#properties
+type CPUTempStat struct {
+	Active               bool
+	ActiveTripPoint      uint32 // Temperature levels (in tenths of degrees Kelvin) at which the OS must activate active cooling
+	ActiveTripPointCount uint32 // Count of active trip points
+	CriticalTripPoint    uint32 // Temperature (in tenths of degrees Kelvin) at which the OS must shutdown the system (ie, critical temperature)
+	CurrentTemperature   uint32 // Temperature at thermal zone in tenths of degrees Kelvin
+	InstanceName         string // ??
+	PassiveTripPoint     uint32 // Temperature (in tenths of degrees Kelvin) at which the OS must activate CPU throttling (ie, enable passive cooling)
+	Reserved             uint32 // ??
+	SamplingPeriod       uint32 // ??
+	ThermalConstant1     uint32 // First thermal constant
+	ThermalConstant2     uint32 // Second thermal constant
+	ThermalStamp         uint32 // Thermal information change stamp
+}
+
 type DiskStat struct {
 	Mountpoint    string         `json:"mountpoint"`
 	Device        string         `json:"device"`
@@ -118,12 +136,22 @@ var (
 )
 
 var (
+	isAdmin  bool
 	hasGPU   bool
 	hostname string
 )
 
 func init() {
 	gpuInfo = &GPU{}
+	isAdmin = checkIsAdmin()
+}
+
+func checkIsAdmin() bool {
+	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
@@ -221,6 +249,21 @@ func GetCPUStats() []CPUStat {
 	cpuStats = append(cpuStats, stats)
 
 	return cpuStats
+}
+
+func CPUTemp() (string, error) {
+	if !isAdmin {
+		return windows.ERROR_ACCESS_DENIED.Error(), windows.ERROR_ACCESS_DENIED
+	}
+	temps, _ := sensors.SensorsTemperatures()
+
+	for _, temp := range temps {
+		if len(cpuTemp) > 0 && temp.Temperature != cpuTemp[len(cpuTemp)-1] {
+			return fmt.Sprint("ok"), nil
+		}
+	}
+	slog.Debug("GetCPUTemp(): " + fmt.Sprintf("%+v", temps))
+	return fmt.Sprintf("%v", temps), nil
 }
 
 func convertFSType(fsType string) FileSystemType {

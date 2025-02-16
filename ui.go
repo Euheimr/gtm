@@ -198,6 +198,8 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
+		boxText, _ = CPUTemp()
+
 		if isResized {
 			// Re-draw immediately if the window is resized
 			app.QueueUpdateDraw(func() {
