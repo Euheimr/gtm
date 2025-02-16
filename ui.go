@@ -530,7 +530,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 
 		netInfo = NetworkStats()
 
-		boxText = GetHostname() + "\n"
+		boxText = buildBoxTitleCentered("//"+Hostname(), RED, width, " ")
 		//boxText += "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
 		for _, iface := range netInfo {
 			boxText += buildBoxTitleStatRow(
