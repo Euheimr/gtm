@@ -165,6 +165,21 @@ func buildBoxTitleStatRow(title string, statStr string, boxWidth int, spaceChar 
 	return title + insertCenterSpacing(title, statStr, boxWidth, spaceChar) + statStr + "\n"
 }
 
+func buildBoxTitleCentered(title string, color string, boxWidth int, spaceChar string) string {
+	var titleString string
+
+	spacesCount := boxWidth - len(title)
+	for range spacesCount / 2 {
+		titleString += spaceChar
+	}
+	titleString += color + title + WHITE
+	for range spacesCount / 2 {
+		titleString += spaceChar
+	}
+	return titleString + "\n"
+}
+
+
 ////##################################################################################////
 ////########################//// UI GOROUTINES START HERE ////########################////
 
