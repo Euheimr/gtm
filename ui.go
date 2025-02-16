@@ -3,8 +3,10 @@ package gtm
 import (
 	"context"
 	"github.com/rivo/tview"
+	"github.com/shirou/gopsutil/v4/mem"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -179,6 +181,58 @@ func buildBoxTitleCentered(title string, color string, boxWidth int, spaceChar s
 	return titleString + "\n"
 }
 
+func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
+	var graphData []int
+
+	switch stat.(type) {
+	case []CPUStat:
+		for _, stat := range stat.([]CPUStat) {
+			graphData = append(graphData, int(math.Round((stat.UsagePercent/100)*float64(boxHeight))))
+		}
+	case []CPUTempStat:
+
+	case []DiskStat:
+
+	case []GPUStat:
+		//return "GPU graph"
+	}
+
+	if len(graphData) > 0 {
+		// limit the length of the CPU stat data to the width of the box so that the line
+		//	graph does not overflow
+		if len(graphData) > boxWidth {
+			graphData = graphData[boxWidth:]
+		}
+
+		maxValue := slices.Max(graphData)
+		minValue := slices.Min(graphData)
+
+		for r := boxHeight; r > 0; r-- {
+			if r < minValue || r > maxValue {
+				//for range boxWidth {
+				//	graphStr += " "
+				//}
+				graph = "\n" + graph
+			} else {
+				// color the graph
+				graph += GREEN
+				// "│", "─", "┌", "┐", "└", "┘"
+				for _, row := range graphData {
+					if row == r {
+						graph += lineSymbols[1]
+					} else {
+						graph += " "
+					}
+				}
+				graph += "\n"
+			}
+		}
+	} else {
+		return "No graph data"
+	}
+
+	return graph
+}
 
 ////##################################################################################////
 ////########################//// UI GOROUTINES START HERE ////########################////
@@ -204,13 +258,16 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height) + "\n"
 
 		stats := GetCPUStats()
-		lastIndex := len(stats) - 1
+		//lastIndex := len(stats) - 1
 
-		boxText = "CPU load: " + strconv.FormatFloat(
-			stats[lastIndex].UsagePercent, 'f', 1, 64) + " %" + "\n"
-		boxText += "len of stats = " + strconv.Itoa(len(stats)) + "\n"
+		//boxText = "CPU load: " + strconv.FormatFloat(
+		//	stats[lastIndex].UsagePercent, 'f', 1, 64) + " %" + "\n"
+		//boxText = "len of stats = " + strconv.Itoa(len(stats)) + "\n"
+		boxText = buildGraph(stats, width, height)
 
 		if isResized {
+			boxText = buildGraph(stats, width, height)
+
 			// Re-draw immediately if the window is resized
 			app.QueueUpdateDraw(func() {
 				box.SetText(boxText)
