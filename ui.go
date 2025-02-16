@@ -57,22 +57,42 @@ func sleepWithTimestampDelta(timestamp time.Time, isResized bool) {
 	}
 }
 
-func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty string) string {
+func buildProgressBar(ratio float64, oldRatio float64, columns int, colorFill string, colorEmpty string) string {
 	var (
-		countFill  int    = 0
-		countEmpty        = columns   // default char count to total box columns (box width)
-		barText    string = colorFill // insert "used" / "load" color tag here
-		charUsed          = barSymbols[4]
-		charEmpty         = barSymbols[1]
-		charStart         = barSymbols[4]
-		charEnd           = barSymbols[1]
+		countFill    int    = 0
+		oldCountFill        = 0
+		countEmpty          = columns // default char count to total box columns (box width)
+		barText      string = ""
+		charUsed            = barSymbols[4]
+		charOld             = barSymbols[2]
+		charEmpty           = barSymbols[1]
+		charStart           = barSymbols[4]
+		charEnd             = barSymbols[1]
 	)
-	// Never have a ratio higher than 1.0 (100%) or the bar will overflow to the next line
-	if ratio <= 1.0 {
-		countFill = int(math.Round(float64(columns) * ratio))
+
+	// Color the bar based on how full they are
+	if ratio >= 0.85 {
+		barText = RED
+	} else if ratio >= 0.7 && ratio < 0.85 {
+		barText = YELLOW
 	} else {
-		// Clamp the ratio to 1.0 ONLY if above 1.0
+		barText = colorFill
+	}
+
+	// If the ratio is greater than 1.0, then a programming error has occurred and I need
+	//	to know about it ASAP
+	if ratio > 1.0 {
+		panic("progress bar ratio cannot be greater than 1.0")
+	}
+
+	if ratio <= 1.0 && oldRatio <= 1.0 {
+		countFill = int(math.Round(float64(columns) * ratio))
+		oldCountFill = int(math.Round(float64(columns) * oldRatio))
+	} else {
+		// Never have a ratio higher than 1.0 (100%) or the bar will overflow to the next line
+		// So, let's clamp the ratio to 1.0 ONLY if above 1.0
 		countFill = int(math.Round(float64(columns) * 1.0))
+		oldCountFill = int(math.Round(float64(columns) * 1.0))
 	}
 
 	if countFill >= 1 {
@@ -91,6 +111,14 @@ func buildProgressBar(ratio float64, columns int, colorFill string, colorEmpty s
 		// Also, we need to make sure the countEmpty is -1 to not overflow text to the next
 		//	line
 		countEmpty -= 1
+	}
+	if oldCountFill > countFill {
+		barText += RED
+		positiveDelta := oldCountFill - countFill
+		for range positiveDelta {
+			barText += charOld
+		}
+		countEmpty -= positiveDelta
 	}
 	// Add in the second color tag for the "empty" or "unused" portion of the bar
 	barText += colorEmpty
@@ -249,11 +277,13 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 					diskCapacity/1000.0, 'f', 2, 64) + " TB"
 			}
 
-			//boxText += dsk.Mountpoint + " | " + strconv.FormatBool(dsk.IsVirtualDisk) +
-			//	" | " + strconv.FormatFloat(dsk.UsedPercent, 'g', -1, 64) +
-			//	"% of " + diskCapacityStr + "\n"
-			boxText += buildBoxTitleRow(dsk.Mountpoint, diskCapacityStr, width, " ")
-			boxText += buildProgressBar(dsk.UsedPercent, width, BLUE, WHITE)
+			boxText += buildBoxTitleStatRow(
+				dsk.Mountpoint, diskCapacityStr, width, " ")
+
+			// TODO: reflect disk size changes
+			boxText += buildProgressBar(
+				dsk.UsedPercent, oldDisksStats[i].UsedPercent, width, BLUE, WHITE)
+
 			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
 		}
 
@@ -281,6 +311,10 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		boxText       string
 		width, height int
 		isResized     bool
+
+		oldGPUStats   []GPUStat
+		oldGPULoadBar string
+		oldGPUMemBar  string
 	)
 
 	box.SetDynamicColors(true)
@@ -292,19 +326,46 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		gpuStats = GPUStats()
+		if oldGPUStats == nil {
+			oldGPUStats = gpuStats
+		}
+
 		lastElement := len(gpuStats) - 1
+		oldLastElement := len(oldGPUStats) - 1
 		/// END DATA FETCH
 
 		gpuLoadStr := strconv.FormatInt(int64(gpuStats[lastElement].Load*100.0), 10) + "%"
-		gpuLoadTitleRow := buildBoxTitleRow("Load:", gpuLoadStr, width, " ")
+		gpuLoadTitleRow := buildBoxTitleStatRow("Load:", gpuLoadStr, width, " ")
 
 		gpuMemoryUsageRatio := gpuStats[lastElement].MemoryUsage / gpuStats[lastElement].MemoryTotal
+		oldGPUMemoryUsageRatio :=
+			oldGPUStats[oldLastElement].MemoryUsage / oldGPUStats[oldLastElement].MemoryTotal
 		gpuMemoryStr := strconv.FormatInt(int64(gpuMemoryUsageRatio*100), 10) + "%"
-		gpuMemoryTitleRow := buildBoxTitleRow("Mem:", gpuMemoryStr, width, " ")
+		gpuMemoryTitleRow := buildBoxTitleStatRow("Mem:", gpuMemoryStr, width, " ")
 
-		boxText = gpuLoadTitleRow + buildProgressBar(gpuStats[lastElement].Load, width, GREEN, WHITE)
+		boxText = gpuLoadTitleRow
+		gpuLoadBar := buildProgressBar(
+			gpuStats[lastElement].Load, oldGPUStats[oldLastElement].Load, width, GREEN, WHITE)
+		if oldGPULoadBar == "" || oldGPULoadBar == gpuLoadBar {
+			oldGPULoadBar = gpuLoadBar
+			boxText += gpuLoadBar
+		} else {
+			boxText += gpuLoadBar
+		}
+
 		boxText += "\n" // add an extra line gap to visually and obviously separate the info
-		boxText += gpuMemoryTitleRow + buildProgressBar(gpuMemoryUsageRatio, width, GREEN, WHITE)
+
+		boxText += gpuMemoryTitleRow
+		gpuMemBar := buildProgressBar(
+			gpuMemoryUsageRatio, oldGPUMemoryUsageRatio, width, GREEN, WHITE)
+		if oldGPUMemBar == "" || oldGPUMemBar == gpuMemBar {
+			oldGPUMemBar = gpuMemBar
+			boxText += gpuMemBar
+		} else {
+			boxText += gpuMemBar
+		}
+
+		oldGPUStats = gpuStats
 
 		if isResized {
 			// Re-draw immediately if the window is resized
@@ -328,6 +389,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		boxText       string
 		width, height int
 		isResized     bool
+		oldGPUStats   []GPUStat
 	)
 
 	box.SetDynamicColors(true)
@@ -339,14 +401,22 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		gpuStats = GPUStats()
+		if len(oldGPUStats) == 0 {
+			oldGPUStats = gpuStats
+		}
 		lastElement := len(gpuStats) - 1
+		oldLastElement := len(oldGPUStats) - 1
 
 		//boxText = "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
 		gpuTempStr := strconv.Itoa(int(gpuStats[lastElement].Temperature)) + "°C"
-		gpuTempTitle := buildBoxTitleRow("Temp:", gpuTempStr, width, " ")
+		gpuTempTitle := buildBoxTitleStatRow("Temp:", gpuTempStr, width, " ")
 
-		boxText = gpuTempTitle + buildProgressBar(
-			float64(gpuStats[lastElement].Temperature)/100.0, width, GREEN, WHITE)
+		gpuTempRatio := float64(gpuStats[lastElement].Temperature) / 100.0
+		oldGPUTempRatio := float64(oldGPUStats[oldLastElement].Temperature / 100.0)
+
+		boxText = gpuTempTitle + buildProgressBar(gpuTempRatio, oldGPUTempRatio, width, GREEN, WHITE)
+
+		oldGPUStats = gpuStats
 
 		if isResized {
 			// Re-draw immediately if the window is resized
@@ -372,6 +442,8 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		boxText       string
 		width, height int
 		isResized     bool
+		memData       []*mem.VirtualMemoryStat
+		oldMemStats   *mem.VirtualMemoryStat
 	)
 
 	box.SetDynamicColors(true)
@@ -383,19 +455,26 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
 		memStats = MemoryStats()
+		memData = append(memData, memStats)
+		if oldMemStats == nil {
+			oldMemStats = memStats
+		}
 		/// END DATA FETCH
 
-		memUsed := ConvertBytesToGiB(memInfo.Used, false)
+		memUsed := ConvertBytesToGiB(memStats.Used, false)
 		memUsedText := strconv.FormatFloat(memUsed, 'f', 1, 64) + " GB"
 
-		memTotal := ConvertBytesToGiB(memInfo.Total, false)
+		memTotal := ConvertBytesToGiB(memStats.Total, false)
 		memTotalText := strconv.FormatFloat(memTotal, 'f', 1, 64) + " GB"
 
-		memoryUsedTitleRow := buildBoxTitleRow("Used", "Total", width, " ")
-		progressBar := buildProgressBar(memInfo.UsedPercent/100, width, GREEN, WHITE)
-		memoryStatsRow := buildBoxTitleRow(memUsedText, memTotalText, width, " ")
+		memoryUsedTitleRow := buildBoxTitleStatRow("Used", "Total", width, " ")
+		progressBar := buildProgressBar(
+			memStats.UsedPercent/100, oldMemStats.UsedPercent/100, width, GREEN, WHITE)
+		memoryStatsRow := buildBoxTitleStatRow(memUsedText, memTotalText, width, " ")
 
 		boxText = memoryUsedTitleRow + progressBar + memoryStatsRow
+
+		oldMemStats = memStats
 
 		if isResized {
 			// Re-draw immediately if the window is resized
@@ -436,9 +515,9 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 		boxText = GetHostname() + "\n"
 		//boxText += "col: " + strconv.Itoa(width) + ", row: " + strconv.Itoa(height)
 		for _, iface := range netInfo {
-			boxText += buildBoxTitleRow(
+			boxText += buildBoxTitleStatRow(
 				"DOWN: ", strconv.FormatUint(iface.BytesSent, 10), width, " ")
-			boxText += buildBoxTitleRow(
+			boxText += buildBoxTitleStatRow(
 				"UP: ", strconv.FormatUint(iface.BytesRecv, 10), width, " ")
 		}
 
