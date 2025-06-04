@@ -4,7 +4,8 @@ export CGO_ENABLED=0
 BINARY_NAME="gtm"
 MAIN_GO_FOLDER="cmd"
 BINARY_FOLDER="bin"
-SCRIPT_NAME=$(basename "$0")
+SCRIPT_NAME="${0%/}"              # strip trailing slash
+SCRIPT_NAME="${SCRIPT_NAME##*/}"  # get the script name
 
 # this is a local variable that's set to 1 in case a build was attempted but failed
 build_attempted=0
@@ -12,17 +13,20 @@ binary_postfix=""
 
 # Get the current directory of this script
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="${DIR%/}"  # strip trailing slash
 cd "${DIR}"
 
-IFS='/'; directory=(${DIR}); unset IFS; # echo "${directory[${#directory[@]}-1]}";
-if [ "${directory[${#directory[@]}-1]}" = "scripts" ]; then
+# getting the last folder is MUCH faster this way instead of using $(basename ...) cmd
+SUBDIR="${DIR##*/}"
+
+if [ "${SUBDIR}" = "scripts" ]; then
     # go one directory above scripts/
     cd ..
 fi
 
 # This is meant to rename the binary with the customary windows .EXE only if we are
 #   building on windows.
-if [ ${OS} = "Windows_NT" ]; then
+if [ "${OS}" = "Windows_NT" ]; then
   binary_postfix=".exe"
 fi
 
