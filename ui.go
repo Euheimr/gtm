@@ -41,24 +41,18 @@ var (
 	update           = &Cfg.UpdateInterval
 )
 
-func sleepWithTimestampDelta(timestamp time.Time, isResized bool) {
-	if isResized {
-		// When the window/box primitive is resized, refresh the window info ASAP
-		//slog.Debug("sleep SKIP")
+func sleepWithTimestampDelta(timestamp time.Time) {
+	// Only sleep window refresh/updates when the window is NOT resized.
+	timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
+	if timeDelta == 0 {
+		//slog.Debug("sleep update = " + strconv.Itoa(int(update.Milliseconds())))
+		time.Sleep(*update)
+	} else if timeDelta < update.Milliseconds() {
+		//slog.Debug("sleep timeDelta = " + strconv.Itoa(int(update.Milliseconds()-timeDelta)))
+		time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
+	} else if timeDelta > update.Milliseconds() {
+		// the timeDelta is greater than the update, don't sleep and update immediately
 		time.Sleep(0)
-	} else {
-		// Only sleep window refresh/updates when the window is NOT resized.
-		timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
-		if timeDelta == 0 {
-			//slog.Debug("sleep update = " + strconv.Itoa(int(update.Milliseconds())))
-			time.Sleep(*update)
-		} else if timeDelta < update.Milliseconds() {
-			//slog.Debug("sleep timeDelta = " + strconv.Itoa(int(update.Milliseconds()-timeDelta)))
-			time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
-		} else if timeDelta > update.Milliseconds() {
-			// the timeDelta is greater than the update, don't sleep and update immediately
-			time.Sleep(0)
-		}
 	}
 }
 
@@ -265,20 +259,15 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		//boxText = "len of stats = " + strconv.Itoa(len(stats)) + "\n"
 		boxText = buildGraph(stats, width, height)
 
-		if isResized {
-			boxText = buildGraph(stats, width, height)
-
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+
+		boxText = buildGraph(stats, width, height)
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
+
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateCPU() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -303,18 +292,13 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 
 		boxText, _ = CPUTemp()
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
+
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateCPUTemp() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -372,18 +356,13 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 
 		oldDisksStats = disksStats
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
+
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateDisk() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -452,18 +431,12 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 
 		oldGPUStats = gpuStats
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateGPU() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -503,18 +476,12 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 
 		oldGPUStats = gpuStats
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateGPUTemp() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -561,18 +528,12 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 
 		oldMemStats = memStats
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateMemory() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -606,18 +567,12 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 				"UP: ", strconv.FormatUint(iface.BytesRecv, 10), width, " ")
 		}
 
-		if isResized {
-			// Re-draw immediately if the window is resized
-			app.QueueUpdateDraw(func() {
-				box.SetText(boxText)
-			})
-		} else {
-			sleepWithTimestampDelta(timestamp, isResized)
-			app.QueueUpdateDraw(func() {
-				// TODO: do draw
-				box.SetText(boxText)
-			})
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
 		}
+		app.QueueUpdateDraw(func() {
+			box.SetText(boxText)
+		})
 		slog.Log(context.Background(), LevelPerf,
 			"UpdateNetwork() time: "+(time.Since(timestamp)-*update).String())
 	}
@@ -626,18 +581,27 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 //// Processes ////#######################################################################
 
 func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool) {
+	var (
+		//boxText       string
+		width, height int
+		isResized     bool
+	)
 
 	box.SetBorder(showBorder).SetTitle(LblProc)
 	slog.Info("Starting `UpdateProcesses()` UI goroutine ...")
 
 	for {
-		//timestamp := time.Now()
+		timestamp := time.Now()
 		// TODO: Get process info here then pass it into the app.QueueUpdateDraw()
 		// 	before sleeping
 
-		time.Sleep(*update)
-		app.QueueUpdate(func() {
+		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
+		if !isResized {
+			sleepWithTimestampDelta(timestamp)
+		}
+		app.QueueUpdateDraw(func() {
+			//box.SetText(boxText)
 		})
 	}
 }
