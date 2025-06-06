@@ -9,7 +9,6 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/sensors"
-	"golang.org/x/sys/windows"
 	"log/slog"
 	"math"
 	"os"
@@ -28,9 +27,9 @@ type FileSystemType int
 
 const (
 	APFS FileSystemType = iota
-	exFAT
 	FAT
 	FAT32
+	EXFAT
 	EXT
 	EXT2
 	EXT3
@@ -164,6 +163,7 @@ func ConvertBytesToGiB(bytes uint64, rounded bool) (result float64) {
 }
 
 func CPUInfo() []CPU {
+
 	if cpuInfo != nil {
 		return cpuInfo
 	}
@@ -243,9 +243,9 @@ func GetCPUStats() []CPUStat {
 }
 
 func CPUTemp() (string, error) {
-	if !isAdmin {
-		return windows.ERROR_ACCESS_DENIED.Error(), windows.ERROR_ACCESS_DENIED
-	}
+	//if !isAdmin {
+	//	return windows.ERROR_ACCESS_DENIED.Error(), windows.ERROR_ACCESS_DENIED
+	//}
 	temps, _ := sensors.SensorsTemperatures()
 
 	for _, temp := range temps {
@@ -253,7 +253,7 @@ func CPUTemp() (string, error) {
 			return fmt.Sprint("ok"), nil
 		}
 	}
-	slog.Debug("GetCPUTemp(): " + fmt.Sprintf("%+v", temps))
+	//slog.Debug("GetCPUTemp(): " + fmt.Sprintf("%+v", temps))
 	return fmt.Sprintf("%v", temps), nil
 }
 
@@ -261,12 +261,12 @@ func convertFSType(fsType string) FileSystemType {
 	switch fsType {
 	case "APFS":
 		return APFS
-	case "exFAT":
-		return exFAT
 	case "FAT":
 		return FAT
 	case "FAT32":
 		return FAT32
+	case "exFAT":
+		return EXFAT
 	case "EXT":
 		return EXT
 	case "EXT2":
@@ -287,53 +287,11 @@ func convertFSType(fsType string) FileSystemType {
 	}
 }
 
-func isVirtualDisk(path string) bool {
-	switch runtime.GOOS {
-	case "windows":
-		d, err := windows.UTF16PtrFromString(path)
-		if err != nil {
-			slog.Error("Failed to get UTF16 pointer from string: " + path + "! " +
-				err.Error())
-		}
-		driveType := windows.GetDriveType(d)
-
-		// 2: DRIVE_REMOVABLE 3: DRIVE_FIXED 4: DRIVE_REMOTE 5: DRIVE_CDROM 6: DRIVE_RAMDISK
-		switch driveType {
-		case windows.DRIVE_RAMDISK:
-			slog.Debug(path + " is a RAMDISK")
-			return true
-		case windows.DRIVE_FIXED:
-			// disk.IOCounters(C:) ALWAYS errors out on Windows, HOWEVER, we do not get an
-			//	empty struct on a valid DRIVE_FIXED device
-			io, _ := disk.IOCounters(path)
-			switch len(io) {
-			case 0:
-				// This is a VERY hacky way of working around detecting Google Drive.
-				//	GDrive is seen as a "real" drive in Windows for some reason, and
-				//	not as a RAMDISK (Virtual Hard Disk; aka. VHD).
-				// But if we try to call disk.IOCounters() on it, we will just get an
-				//	empty struct (length of 0) back, which indicates it IS a RAMDISK.
-				// This is the only way I've been able to detect a mounted Google
-				//	Drive :(
-				slog.Debug("drive " + path + " IS a RAMDISK")
-				return true
-			default:
-				// Any other case that is len(io) > 0 means it is not a RAMDISK
-				slog.Debug("disk.IOCounters(" + path + "): " + io[path].String())
-				return false
-			}
-		default:
-			slog.Debug(path + " is not a RAMDISK")
-			return false
-		}
-	default:
-		// TODO: do RAMDISK checks for macOS & Linux !
-		slog.Debug("Not on windows... ignoring RAMDISK check ...")
-		return false
-	}
-}
-
 func DisksStats() []DiskStat {
+	var (
+		isVDisk bool
+	)
+
 	if time.Since(lastFetchDisk) < DISK_STATS_UPDATE_INTERVAL && len(disksStats) > 0 {
 		return disksStats
 	}
@@ -356,7 +314,12 @@ func DisksStats() []DiskStat {
 
 		// convert filesystem type to integer
 		fsType := convertFSType(usage.Fstype)
-		isVDisk := isVirtualDisk(dsk.Mountpoint)
+
+		// TODO: find a way to detect virtual disks on linux/macos ?
+		if runtime.GOOS == "windows" {
+			isVDisk = isVirtualDisk(dsk.Mountpoint)
+		}
+
 		usedPercent := math.Round((usage.UsedPercent*100)/100) / 100
 
 		stats := DiskStat{
