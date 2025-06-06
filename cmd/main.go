@@ -38,7 +38,9 @@ var (
 
 func init() {
 	// Read the `.env` config before logging and anything else
-	gtm.ReadConfig()
+	if err := gtm.ReadConfig(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Logging will not work as expected unless we set it first, but only after reading
 	//	`.env` config
