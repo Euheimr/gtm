@@ -182,6 +182,16 @@ func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 	case []CPUStat:
 		for _, stat := range stat.([]CPUStat) {
 			graphData = append(graphData, int(math.Round((stat.UsagePercent/100)*float64(boxHeight))))
+
+			var dataStr string
+			for i, dat := range graphData {
+				if i == 0 {
+					dataStr += strconv.Itoa(dat)
+				} else {
+					dataStr += "," + strconv.Itoa(dat)
+				}
+			}
+			slog.Debug("buildGraph(): graphData = " + dataStr)
 		}
 	case []CPUTempStat:
 
@@ -225,6 +235,8 @@ func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 		return "No graph data"
 	}
 
+	slog.Debug("buildGraph(): " + graph)
+
 	return graph
 }
 
@@ -266,10 +278,12 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		boxText = buildGraph(stats, width, height)
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateCPU() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
 
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateCPU() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -297,10 +311,12 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateCPUTemp() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
 
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateCPUTemp() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -308,7 +324,6 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 
 func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 	var (
-		boxText       string
 		width, height int
 		isResized     bool
 		oldDisksStats []DiskStat
@@ -319,6 +334,8 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 	slog.Info("Starting `UpdateDisk()` UI goroutine ...")
 
 	for {
+		var boxText string
+
 		timestamp := time.Now()
 		width, height, isResized = getInnerBoxSize(box.Box, width, height)
 
@@ -326,10 +343,15 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		if oldDisksStats == nil {
 			oldDisksStats = disksStats
 		}
-		boxText = ""
 
 		for i, dsk := range disksStats {
+			var vDiskStr string
 			var diskCapacityStr string
+
+			if dsk.IsVirtualDisk {
+				vDiskStr = "<Virtual Disk>"
+			}
+
 			diskCapacity := ConvertBytesToGiB(dsk.Total, false)
 			if diskCapacity < 999 {
 				diskCapacityStr = strconv.FormatFloat(
@@ -340,7 +362,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 			}
 
 			boxText += buildBoxTitleStatRow(
-				dsk.Mountpoint, diskCapacityStr, width, " ")
+				dsk.Mountpoint+" "+vDiskStr, diskCapacityStr, width, " ")
 
 			// TODO: reflect disk size changes
 			boxText += buildProgressBar(
@@ -361,10 +383,12 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateDisk() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
 
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateDisk() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -436,9 +460,11 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateGPU() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateGPU() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -481,9 +507,11 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateGPUTemp() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateGPUTemp() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -533,9 +561,11 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateMemory() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateMemory() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -572,9 +602,11 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 		}
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateNetwork() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
-		slog.Log(context.Background(), LevelPerf,
-			"UpdateNetwork() time: "+(time.Since(timestamp)-*update).String())
 	}
 }
 
@@ -602,6 +634,10 @@ func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool) 
 		}
 		app.QueueUpdateDraw(func() {
 			//box.SetText(boxText)
+			if Cfg.PerformanceLoggingUI {
+				slog.Log(context.Background(), LevelPerf,
+					"UpdateProcesses() time: "+(time.Since(timestamp)-*update).String())
+			}
 		})
 	}
 }
