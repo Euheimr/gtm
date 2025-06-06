@@ -154,7 +154,7 @@ func main() {
 	// Setup keybinds ...
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlC:
+		case tcell.KeyCtrlC, tcell.KeyEscape:
 			app.Stop()
 		default:
 			return event
