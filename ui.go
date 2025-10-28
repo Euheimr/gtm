@@ -176,6 +176,7 @@ func buildBoxTitleCentered(title string, color string, boxWidth int, spaceChar s
 }
 
 func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
+	timestamp := time.Now()
 	var graphData []int
 
 	switch stat.(type) {
@@ -191,7 +192,7 @@ func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 					dataStr += "," + strconv.Itoa(dat)
 				}
 			}
-			slog.Debug("buildGraph(): graphData = " + dataStr)
+			//slog.Debug("buildGraph(): graphData = " + dataStr)
 		}
 	case []CPUTempStat:
 
@@ -235,7 +236,15 @@ func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 		return "No graph data"
 	}
 
-	slog.Debug("buildGraph(): " + graph)
+	duration := time.Since(timestamp)
+	if duration != 0 {
+		timestampHistory = append(timestampHistory, duration)
+		slog.Log(context.Background(), LevelPerf,
+			"buildGraph() time: "+(duration).String()+", "+
+				"mean time: "+strconv.FormatFloat(mean(timestampHistory), 'f', 2, 64)+"µs")
+	}
+	return graph
+}
 
 	return graph
 }
@@ -279,8 +288,12 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateCPU() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateCPU() time: "+(timeDelta).String())
 			}
 		})
 
@@ -312,8 +325,12 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateCPUTemp() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateCPUTemp() time: "+timeDelta.String())
 			}
 		})
 
@@ -384,8 +401,12 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateDisk() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateDisk() time: "+timeDelta.String())
 			}
 		})
 
@@ -461,8 +482,12 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateGPU() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateGPU() time: "+timeDelta.String())
 			}
 		})
 	}
@@ -508,8 +533,12 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateGPUTemp() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateGPUTemp() time: "+timeDelta.String())
 			}
 		})
 	}
@@ -562,8 +591,12 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateMemory() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateMemory() time: "+timeDelta.String())
 			}
 		})
 	}
@@ -603,8 +636,12 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateNetwork() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateNetwork() time: "+timeDelta.String())
 			}
 		})
 	}
@@ -635,8 +672,12 @@ func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool) 
 		app.QueueUpdateDraw(func() {
 			//box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
+				timeDelta := time.Since(timestamp)
+				if isResized {
+					timeDelta = time.Since(timestamp) - *update
+				}
 				slog.Log(context.Background(), LevelPerf,
-					"UpdateProcesses() time: "+(time.Since(timestamp)-*update).String())
+					"UpdateProcesses() time: "+timeDelta.String())
 			}
 		})
 	}
