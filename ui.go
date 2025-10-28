@@ -33,13 +33,33 @@ const (
 )
 
 var (
-	barSymbols       = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
-	treeSymbols      = [4]string{"│", "├", "─", "└"}
-	blockSymbols     = [4]string{"█", "▄", "■", "▀"}
-	lineSymbols      = [6]string{"│", "─", "┌", "┐", "└", "┘"}
-	directionSymbols = [8]string{"↑", "↓", "←", "→", "↖", "↗", "↘", "↙"}
-	update           = &Cfg.UpdateInterval
+	update     = &Cfg.UpdateInterval
+	barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
+	// ascii codes => https://theasciicode.com.ar/
+	lineSymbols = [9]string{" ", "─", "│", "┌", "└", "┐", "┘", "▏", "▕"}
+	//treeSymbols      = [5]string{"│", "┤", "├", "─", "└"}
+	//blockSymbols     = [4]string{"█", "▄", "■", "▀"}
+	//directionSymbols = [8]string{"↑", "↓", "←", "→", "↖", "↗", "↘", "↙"}
+	programStartTimestamp = time.Now()
 )
+
+const (
+	Null                   = '\u0000'
+	LineHorizontal         = '\u2500' // ─
+	LineVertical           = '\u2502' // │
+	LineVerticalHeavy      = '\u2503' // ┃
+	LineDownRight          = '\u250C' // ┌
+	LineDownLeft           = '\u2510' // ┐
+	LineUpRight            = '\u2514' // └
+	LineUpLeft             = '\u2518' // ┘
+	LineVerticalRight      = '\u251C' // ├
+	LineVerticalLeft       = '\u2524' // ┤
+	LineHorizontalUp       = '\u2534' // ┴
+	LineHorizontalDown     = '\u252C' // ┬
+	LineHorizontalVertical = '\u253C' // ┼
+)
+
+var timestampHistory []time.Duration
 
 func sleepWithTimestampDelta(timestamp time.Time) {
 	// Only sleep window refresh/updates when the window is NOT resized.
@@ -175,6 +195,15 @@ func buildBoxTitleCentered(title string, color string, boxWidth int, spaceChar s
 	return titleString + "\n"
 }
 
+func mean(timestamps []time.Duration) float64 {
+	total := 0.0
+
+	for _, t := range timestamps {
+		total += float64(t.Microseconds())
+	}
+	return total / float64(len(timestamps))
+}
+
 func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 	timestamp := time.Now()
 	var graphData []int
@@ -246,6 +275,136 @@ func buildGraph(stat any, boxWidth int, boxHeight int) (graph string) {
 	return graph
 }
 
+func buildGraphMatrix(stat any, boxWidth int, boxHeight int) (graph string) {
+	timestamp := time.Now()
+
+	var matrix [][]int32
+
+	// The first index of the matrix is the height, the second index is the width and the
+	//	value at [x][y] equals the index of the symbol to use for the graph string
+	matrix = make([][]int32, boxHeight+1)
+	for row := range matrix {
+		matrix[row] = make([]int32, boxWidth)
+	}
+
+	switch stat.(type) {
+	case []CPUStat:
+		// make sure we just take the last n stats for the matrix so we don't overflow index
+		if len(stat.([]CPUStat)) > boxWidth {
+			stat = stat.([]CPUStat)[len(stat.([]CPUStat))-boxWidth:]
+		}
+
+		for key, val := range stat.([]CPUStat) {
+			row := int(math.Round((val.UsagePercent / 100) * float64(boxHeight)))
+			matrix[row][key] = LineHorizontal
+		}
+	case []CPUTempStat:
+	case []DiskStat:
+	case []GPUStat:
+	}
+
+	for col := 0; col < (boxWidth - 1); col++ { // left -> right
+		// ?? i need to do something here?
+		previousRow := 0
+
+		for row := 0; row < boxHeight; row++ { // bottom -> up
+			if previousRow == 0 {
+				if matrix[row][col] == LineHorizontal && matrix[row][col+1] == 0 {
+					// remember the row then search for the ceiling?
+					previousRow = row
+				}
+			} else if matrix[row][col] == 0 && matrix[row][col+1] == 1 {
+				rowDelta := previousRow - row
+				for r := row; r < rowDelta; r++ {
+					matrix[r][col] = 2
+				}
+			}
+			if previousRow != 0 {
+				break
+			}
+
+		}
+
+		//for row := 0; row < len(matrix)-1; row++ {
+		// Replace values
+		//	0	 1    2	   3	4	 5	  6	   7	8
+		// " ", "─", "│", "┌", "└", "┐", "┘", "▏", "▕"
+		//if (col > 0 && row > 0) && matrix[row][col] == 1 {
+		//	if matrix[row-1][col-1] == 1 {
+		//		matrix[row][col] = 3 // "┌"
+		//	} else if matrix[row+1][col-1] == 1 {
+		//		matrix[row][col] = 4 // "└"
+		//	} else if matrix[row-1][col+1] == 1 {
+		//		matrix[row][col+1] = 5 // "┐"
+		//	} else if matrix[row+1][col+1] == 1 {
+		//		matrix[row][col+1] = 6 // "┘"
+		//	}
+		//}
+		//	if (col > 0 && row > 0) && matrix[row][col] == 1 {
+		//if (matrix[row][col-1] == 0 && matrix[row-1][col-1] == 1) &&
+		//	(matrix[row][col+1] == 0 && matrix[row-1][col+1] == 1) {
+		//	matrix[row][col-1] = 3
+		//	matrix[row][col+1] = 5
+		//}
+		//		if matrix[row+1][col+1] == 1 {
+		//			matrix[row][col] = 6
+		//			matrix[row+1][col] = 3
+		//		}
+		//		if matrix[row-1][col-1] == 1 {
+		//			matrix[row-1][col] = 4
+		//			matrix[row][col+1] = 5
+		//		}
+		//	}
+		//}
+	}
+
+	// build the matrix from the bottom->UP then left->right
+	for row := len(matrix) - 1; row > 0; row-- {
+		for col := 0; col < boxWidth-1; col++ {
+			// Finally, start building the graph string using the matrix
+			switch matrix[row][col] {
+			case LineHorizontal:
+				graph += string(LineHorizontal)
+			case LineVertical:
+				graph += string(LineVertical)
+			case LineVerticalHeavy:
+				graph += string(LineVerticalHeavy)
+			case LineDownRight:
+				graph += string(LineDownRight)
+			case LineDownLeft:
+				graph += string(LineDownLeft)
+			case LineUpRight:
+				graph += string(LineUpRight)
+			case LineUpLeft:
+				graph += string(LineUpLeft)
+			case LineVerticalRight:
+				graph += string(LineVerticalRight)
+			case LineVerticalLeft:
+				graph += string(LineVerticalLeft)
+			case LineHorizontalUp:
+				graph += string(LineHorizontalUp)
+			case LineHorizontalDown:
+				graph += string(LineHorizontalDown)
+			case LineHorizontalVertical:
+				graph += string(LineHorizontalVertical)
+			default: // default accounts for case 0 and any other value not in the switch
+				graph += " "
+			}
+
+			//graph += strconv.Itoa(matrix[row][col])
+
+		}
+		graph += "\n"
+	}
+
+	duration := time.Since(timestamp)
+	if duration != 0 {
+		timestampHistory = append(timestampHistory, duration)
+		slog.Log(context.Background(), LevelPerf,
+			"buildGraphMatrix() time: "+(duration).String()+", "+
+				"mean time: "+strconv.FormatFloat(mean(timestampHistory), 'f', 2, 64)+"µs")
+	}
+
 	return graph
 }
 
@@ -278,13 +437,13 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		//boxText = "CPU load: " + strconv.FormatFloat(
 		//	stats[lastIndex].UsagePercent, 'f', 1, 64) + " %" + "\n"
 		//boxText = "len of stats = " + strconv.Itoa(len(stats)) + "\n"
-		boxText = buildGraph(stats, width, height)
+		//boxText = buildGraph(stats, width, height)
 
 		if !isResized {
 			sleepWithTimestampDelta(timestamp)
 		}
 
-		boxText = buildGraph(stats, width, height)
+		boxText = buildGraphMatrix(stats, width, height)
 		app.QueueUpdateDraw(func() {
 			box.SetText(boxText)
 			if Cfg.PerformanceLoggingUI {
