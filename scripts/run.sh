@@ -1,5 +1,6 @@
 #!/bin/bash
 export CGO_ENABLED=0
+export GOEXPERIMENT=greenteagc  # Enable the new GC introduced with 1.25 !
 
 BINARY_NAME="gtm"
 MAIN_GO_FOLDER="cmd"
@@ -97,7 +98,7 @@ while [ $# -gt 0 ]; do
     *) echo "[${SCRIPT_NAME}] ERROR Invalid Option flag: ${1}";
        echo "[${SCRIPT_NAME}] Use the following flags:";
        echo "    Force a Build & Run the executable with: --build, build, or -b";
-       echo "    Force ONLY a build (DO NOT run ${BINARY_NAME}): --build-only, build-only, or -bo";
+       echo "    Force *ONLY* a build (DO NOT run ${BINARY_NAME}): --build-only, build-only, or -bo";
        echo "    Delete any binaries in /bin with: --clean, clean, or -c";
     exit
       ;;
