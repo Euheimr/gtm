@@ -24,12 +24,9 @@ _**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource
 
 ### Why
 
-- Similar existing tools use `Python` (requires python interpreter) or `C` (difficult to work with, when it matters)
-- Similar existing tools are _platform-specific_ (operating system and/or CPU architecture-restrictive) and compiled or written needing external dependencies
-- `htop`, `btop` and `top` are great but don't have everything I need (also platform-specific)
-- And, I really enjoy writing [Go](https://go.dev/)
-
-_Also, I totally haven't redesigned this whole project 5 times... definitely not... (... I did)_
+- I really enjoy [Go](https://go.dev/)
+- `htop`, `btop` and `top` are great are platform-specific
+- Similar existing tools are _platform-specific_ (operating system and/or CPU architecture-restrictive)
 
 
 ### Requirements
@@ -54,9 +51,11 @@ _Source Code Structure_:
      ├── scripts/
      │    ├─ run.sh
      │    ├─ log.sh
+     │    ├─ perf.sh
      │    └─ pprof.sh
      ├─ config.go
      ├─ devices.go
+     ├─ devices_windows.go
      ├─ log.go
      └─ ui.go
 
