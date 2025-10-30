@@ -3,12 +3,6 @@ package gtm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/disk"
-	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/mem"
-	"github.com/shirou/gopsutil/v4/net"
-	"github.com/shirou/gopsutil/v4/sensors"
 	"log/slog"
 	"math"
 	"os"
@@ -17,16 +11,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/sensors"
 )
 
 // GIBIBYTE is the binary representation of gigabyte
 const GIBIBYTE = 1_073_741_824 // Binary base 2^30 or 1024^3
 const GIGABYTE = 1_000_000_000 // Decimal base 10^9
 
-type FileSystemType int
+type FileSystem int
 
 const (
-	APFS FileSystemType = iota
+	APFS FileSystem = iota
 	FAT
 	FAT32
 	EXFAT
@@ -40,13 +41,13 @@ const (
 )
 
 const (
-	CPU_STATS_UPDATE_INTERVAL  = time.Second
-	DISK_STATS_UPDATE_INTERVAL = time.Minute
-	GPU_STATS_UPDATE_INTERVAL  = time.Second
-	HOST_INFO_UPDATE_INTERVAL  = time.Second
-	MEM_STATS_UPDATE_INTERVAL  = time.Second
-	NET_STATS_UPDATE_INTERVAL  = time.Second
-	PROCS_UPDATE_INTERVAL      = time.Second
+	CPU_STATS_UPDATE_INTERVAL  time.Duration = time.Second
+	DISK_STATS_UPDATE_INTERVAL time.Duration = time.Minute
+	GPU_STATS_UPDATE_INTERVAL  time.Duration = time.Second
+	HOST_INFO_UPDATE_INTERVAL  time.Duration = time.Second
+	MEM_STATS_UPDATE_INTERVAL  time.Duration = time.Second
+	NET_STATS_UPDATE_INTERVAL  time.Duration = time.Second
+	PROCS_UPDATE_INTERVAL      time.Duration = time.Second
 )
 
 type CPU struct {
@@ -79,14 +80,14 @@ type CPUTempStat struct {
 }
 
 type DiskStat struct {
-	Mountpoint    string         `json:"mountpoint"`
-	Device        string         `json:"device"`
-	FSType        FileSystemType `json:"fs_type"`
-	IsVirtualDisk bool           `json:"is_virtual_disk"`
-	Free          uint64         `json:"free"`
-	Used          uint64         `json:"used"`
-	UsedPercent   float64        `json:"used_percent"`
-	Total         uint64         `json:"total"`
+	Mountpoint    string     `json:"mountpoint"`
+	Device        string     `json:"device"`
+	FSType        FileSystem `json:"fs"`
+	IsVirtualDisk bool       `json:"is_virtual_disk"`
+	Free          uint64     `json:"free"`
+	Used          uint64     `json:"used"`
+	UsedPercent   float64    `json:"used_percent"`
+	Total         uint64     `json:"total"`
 }
 
 type GPU struct {
@@ -268,7 +269,7 @@ func CPUTemp() (string, error) {
 	return fmt.Sprintf("%v", temps), nil
 }
 
-func convertFSType(fsType string) FileSystemType {
+func convertFSType(fsType string) FileSystem {
 	switch fsType {
 	case "APFS":
 		return APFS
