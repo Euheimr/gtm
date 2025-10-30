@@ -127,13 +127,14 @@ var (
 
 var (
 	isAdmin  bool
-	hasGPU   bool
+	HasGPU   bool
 	hostname string
 )
 
 func init() {
 	gpuInfo = &GPU{}
 	isAdmin = checkIsAdmin()
+	HasGPU = hasGPU()
 }
 
 func checkIsAdmin() bool {
@@ -337,24 +338,24 @@ func DisksStats() []DiskStat {
 	return disksStats
 }
 
-func HasGPU() bool {
+func hasGPU() bool {
 	// Booleans initialize to false. If hasGPU is true, then we have checked already.
 	//	Just return the true value instead of calling GPU utils again
-	if hasGPU {
-		return hasGPU
+	if HasGPU {
+		return HasGPU
 	}
 	if err := exec.Command("nvidia-smi").Run(); err == nil {
 		gpuInfo.Vendor = "nvidia"
-		hasGPU = true
-		return hasGPU
+		HasGPU = true
+		return HasGPU
 	}
 	if err := exec.Command("rocm-smi").Run(); err == nil {
 		gpuInfo.Vendor = "amd"
-		hasGPU = true
-		return hasGPU
+		HasGPU = true
+		return HasGPU
 	}
 	slog.Error("HasGPU(): Could not find NVIDIA or AMD GPUs installed using SMI")
-	return hasGPU
+	return HasGPU
 }
 
 func (g *GPUStat) String() string {

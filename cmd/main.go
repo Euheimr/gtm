@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"gtm"
 	"log"
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 type CPUBox struct {
@@ -31,12 +32,14 @@ type LayoutMain struct {
 }
 
 var (
-	fMain  *tview.Flex
-	layout *LayoutMain
-	hasGPU bool
+	fMain          *tview.Flex
+	layout         *LayoutMain
+	StartTimestamp time.Time
 )
 
 func init() {
+	StartTimestamp = time.Now()
+
 	// Read the `.env` config before logging and anything else
 	if err := gtm.ReadConfig(); err != nil {
 		log.Fatal(err)
@@ -55,32 +58,33 @@ func init() {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
-	hasGPU = gtm.HasGPU()
 
 	// Seed the initial values & data before setting up the rest of the app
 	gtm.HostInfo()
 	gtm.CPUInfo()
 	gtm.GetCPUStats()
 	gtm.DisksStats()
-	if hasGPU {
-		gtm.GPUStats()
-		// gtm.GPUStats()
-	}
 	gtm.MemoryStats()
 	gtm.NetworkStats()
+	if gtm.HasGPU {
+		gtm.GPUStats()
+	}
 
 	// Initialize the main layout ASAP
 	layout = &LayoutMain{
 		CPU: &CPUBox{
 			Stats: tview.NewTextView(),
-			Temp:  tview.NewTextView(),
 		},
 		Disk:      tview.NewTextView(),
 		Memory:    tview.NewTextView(),
 		Network:   tview.NewTextView(),
 		Processes: tview.NewTable(),
 	}
-	if hasGPU {
+	if gtm.IsAdmin {
+		layout.CPU.Temp = tview.NewTextView()
+	}
+
+	if gtm.HasGPU {
 		layout.GPU = &GPUBox{
 			Stats: tview.NewTextView(),
 			Temp:  tview.NewTextView(),
@@ -97,22 +101,19 @@ func setupLayout() {
 	fMain.SetDirection(tview.FlexRow)
 
 	// SETUP PRIMARY LAYOUT
-	/// Row 1
-	flexRow1 := tview.NewFlex()
-
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
-	cpuParentBox.SetBorder(true)
-	cpuParentBox.SetTitle(" " + gtm.CPUModelName() + " ")
+	layout.CPU.Stats.SetTitle(" " + gtm.CPUModelName() + " ")
 
-	flexRow1.AddItem(cpuParentBox.
-		AddItem(layout.CPU.Stats, 0, 5, false).
-		AddItem(layout.CPU.Temp, 0, 2, false),
-		0, 6, false)
+	cpuParentBox.AddItem(layout.CPU.Stats, 0, 5, false)
+	if gtm.IsAdmin {
+		cpuParentBox.AddItem(layout.CPU.Temp, 0, 2, false)
+	}
+	flexRow1 := tview.NewFlex()
+	flexRow1.AddItem(cpuParentBox, 0, 6, false)
 
 	// ROW 1 COLUMN 2
 	flexRow1.AddItem(layout.Memory, 0, 2, false)
-	fMain.AddItem(flexRow1, 0, 22, false)
 
 	/// Row 2
 	flexRow2 := tview.NewFlex()
@@ -125,21 +126,23 @@ func setupLayout() {
 		AddItem(layout.Network, 0, 2, false).
 		AddItem(layout.Disk, 0, 2, false),
 		0, 1, false)
-	if hasGPU {
+	if gtm.HasGPU {
 		// ROW 2 COLUMN 3
 		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(layout.GPU.Stats, 0, 4, false).
 			AddItem(layout.GPU.Temp, 0, 4, false),
 			0, 1, false)
 	}
-	fMain.AddItem(flexRow2, 0, 40, false)
 
 	/// Row 3
 	flexRow3 := tview.NewFlex()
 	flexRow3.AddItem(tview.NewTextView().
 		SetText(" <F1> Test   <F2> Test 1   <F3> Test 2   <F4> Test 3"),
 		0, 1, false)
-	fMain.AddItem(flexRow3, 0, 1, false)
+
+	fMain.AddItem(flexRow1, 0, 22, false).
+		AddItem(flexRow2, 0, 40, false).
+		AddItem(flexRow3, 0, 1, false)
 }
 
 func main() {
@@ -172,17 +175,19 @@ func main() {
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
-	go gtm.UpdateCPU(app, layout.CPU.Stats, false)
-	go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true)
+	go gtm.UpdateCPU(app, layout.CPU.Stats, true)
 	go gtm.UpdateDisk(app, layout.Disk, true)
-	if hasGPU {
+	go gtm.UpdateMemory(app, layout.Memory, true)
+	go gtm.UpdateNetwork(app, layout.Network, true)
+	go gtm.UpdateProcesses(app, layout.Processes, true)
+	if gtm.IsAdmin {
+		go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true)
+	}
+	if gtm.HasGPU {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
 		go gtm.UpdateGPU(app, layout.GPU.Stats, true)
 		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true)
 	}
-	go gtm.UpdateMemory(app, layout.Memory, true)
-	go gtm.UpdateNetwork(app, layout.Network, true)
-	go gtm.UpdateProcesses(app, layout.Processes, true)
 
 	slog.Info("Waiting for goroutines to start up ...")
 	time.Sleep(20 * time.Millisecond) // wait to start up all the goroutines
