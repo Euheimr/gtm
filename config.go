@@ -179,3 +179,7 @@ func ReadConfig() (err error) {
 
 	return nil
 }
+
+func (c *ConfigVars) SetUpdateInterval(milliseconds time.Duration) {
+	c.UpdateInterval = milliseconds
+}

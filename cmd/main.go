@@ -162,6 +162,14 @@ func main() {
 		return event
 	})
 
+	// We want to have the initial loading to be instant and not lag when the app first loads
+	// For example: we have an update interval 1 to 5 seconds. If we first run the app, it
+	// 	will take 1-5 seconds for the data & UI elements to show up. This is undesirable.
+	// To fix this, we set the update interval to 1ms while the goroutines spin up, then set
+	// 	it back to default right before the app.Run() call
+	defaultUpdate := gtm.Cfg.UpdateInterval
+	gtm.Cfg.SetUpdateInterval(time.Millisecond)
+
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
 	go gtm.UpdateCPU(app, layout.CPU.Stats, false)
@@ -181,6 +189,7 @@ func main() {
 
 	// START APP
 	slog.Info("Starting the app ...")
+	gtm.Cfg.SetUpdateInterval(defaultUpdate)
 	if err := app.Run(); err != nil {
 		slog.Error("Failed to run the app! " + err.Error())
 		panic(err)

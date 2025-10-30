@@ -33,7 +33,6 @@ const (
 )
 
 var (
-	update     = &Cfg.UpdateInterval
 	barSymbols = [8]string{" ", "░", "▒", "▓", "█", "[", "|", "]"}
 	// ascii codes => https://theasciicode.com.ar/
 	lineSymbols = [9]string{" ", "─", "│", "┌", "└", "┐", "┘", "▏", "▕"}
@@ -66,11 +65,11 @@ func sleepWithTimestampDelta(timestamp time.Time) {
 	timeDelta := time.Now().UnixMilli() - timestamp.UnixMilli()
 	if timeDelta == 0 {
 		//slog.Debug("sleep update = " + strconv.Itoa(int(update.Milliseconds())))
-		time.Sleep(*update)
-	} else if timeDelta < update.Milliseconds() {
+		time.Sleep(Cfg.UpdateInterval)
+	} else if timeDelta < Cfg.UpdateInterval.Milliseconds() {
 		//slog.Debug("sleep timeDelta = " + strconv.Itoa(int(update.Milliseconds()-timeDelta)))
-		time.Sleep(time.Duration(update.Milliseconds() - timeDelta))
-	} else if timeDelta > update.Milliseconds() {
+		time.Sleep(time.Duration(Cfg.UpdateInterval.Milliseconds() - timeDelta))
+	} else if timeDelta > Cfg.UpdateInterval.Milliseconds() {
 		// the timeDelta is greater than the update, don't sleep and update immediately
 		time.Sleep(0)
 	}
@@ -449,7 +448,7 @@ func UpdateCPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateCPU() time: "+(timeDelta).String())
@@ -486,7 +485,7 @@ func UpdateCPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateCPUTemp() time: "+timeDelta.String())
@@ -562,7 +561,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateDisk() time: "+timeDelta.String())
@@ -643,7 +642,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateGPU() time: "+timeDelta.String())
@@ -694,7 +693,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateGPUTemp() time: "+timeDelta.String())
@@ -752,7 +751,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateMemory() time: "+timeDelta.String())
@@ -797,7 +796,7 @@ func UpdateNetwork(app *tview.Application, box *tview.TextView, showBorder bool)
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateNetwork() time: "+timeDelta.String())
@@ -833,7 +832,7 @@ func UpdateProcesses(app *tview.Application, box *tview.Table, showBorder bool) 
 			if Cfg.PerformanceLoggingUI {
 				timeDelta := time.Since(timestamp)
 				if isResized {
-					timeDelta = time.Since(timestamp) - *update
+					timeDelta = time.Since(timestamp) - *&Cfg.UpdateInterval
 				}
 				slog.Log(context.Background(), LevelPerf,
 					"UpdateProcesses() time: "+timeDelta.String())
