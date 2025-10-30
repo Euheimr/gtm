@@ -1,7 +1,6 @@
 package gtm
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"log/slog"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type ConfigVars struct {
@@ -33,7 +34,7 @@ var CFG_DEFAULT = ConfigVars{
 
 const CONFIG_FILENAME = ".env"
 
-var Cfg ConfigVars
+var Cfg *ConfigVars
 
 func getRootDir() (dir string, err error) {
 	if dir, err = os.Getwd(); err != nil {
@@ -110,7 +111,15 @@ func ReadConfig() (err error) {
 
 	// seed the default values first, then override those defaults with values read
 	//	from the config file (.env)
-	Cfg = CFG_DEFAULT
+	Cfg = &ConfigVars{
+		Celsius:              true,
+		DeleteOldLogs:        false,
+		Debug:                false,
+		PerformanceLogging:   false,
+		PerformanceLoggingUI: false,
+		TraceFunctionLogging: false,
+		UpdateInterval:       500 * time.Millisecond,
+	}
 
 	rootDir, err := getRootDir()
 	if err != nil {
