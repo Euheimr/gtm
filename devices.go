@@ -126,23 +126,33 @@ var (
 )
 
 var (
-	isAdmin  bool
+	IsAdmin  bool
 	HasGPU   bool
 	hostname string
 )
 
 func init() {
 	gpuInfo = &GPU{}
-	isAdmin = checkIsAdmin()
+	IsAdmin = checkIsAdmin()
 	HasGPU = hasGPU()
 }
 
-func checkIsAdmin() bool {
-	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
-	if err != nil {
-		return false
+func checkIsAdmin() (IsAdmin bool) {
+	if IsAdmin {
+		return IsAdmin
 	}
-	return true
+	switch runtime.GOOS {
+	case "windows":
+		if _, err := os.Open("\\\\.\\PHYSICALDRIVE0"); err == nil {
+			IsAdmin = true
+		}
+	case "linux":
+		slog.Error("checkIsAdmin() NOT IMPLEMENTED for " + runtime.GOOS)
+	default:
+		slog.Error("checkIsAdmin() NOT IMPLEMENTED for " + runtime.GOOS)
+	}
+
+	return IsAdmin
 }
 
 func ConvertBytesToGB(bytes uint64, rounded bool) (result float64) {
