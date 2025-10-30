@@ -2,34 +2,35 @@ package gtm
 
 import (
 	"context"
-	"github.com/rivo/tview"
-	"github.com/shirou/gopsutil/v4/mem"
 	"log/slog"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rivo/tview"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // These constants are text formatting tags used by the tcell package
 const (
 	BLACK  string = "[black]"
-	BLUE          = "[blue]"
-	GREEN         = "[green]"
-	GRAY          = "[gray]"
-	RED           = "[red]"
-	WHITE         = "[white]"
-	YELLOW        = "[yellow]"
+	BLUE   string = "[blue]"
+	GREEN  string = "[green]"
+	GRAY   string = "[gray]"
+	RED    string = "[red]"
+	WHITE  string = "[white]"
+	YELLOW string = "[yellow]"
 )
 
 const (
-	LblCPUTemp = " CPU Temp "
-	LblDisk    = " HDD / SSD "
-	LblGPUTemp = " GPU Temp "
-	LblMemory  = " Memory "
-	LblNetwork = " Network "
-	LblProc    = " Processes "
+	LblCPUTemp string = " CPU Temp "
+	LblDisk    string = " HDD / SSD "
+	LblGPUTemp string = " GPU Temp "
+	LblMemory  string = " Memory "
+	LblNetwork string = " Network "
+	LblProc    string = " Processes "
 )
 
 var (
@@ -39,7 +40,6 @@ var (
 	//treeSymbols      = [5]string{"│", "┤", "├", "─", "└"}
 	//blockSymbols     = [4]string{"█", "▄", "■", "▀"}
 	//directionSymbols = [8]string{"↑", "↓", "←", "→", "↖", "↗", "↘", "↙"}
-	programStartTimestamp = time.Now()
 )
 
 const (
@@ -75,17 +75,16 @@ func sleepWithTimestampDelta(timestamp time.Time) {
 	}
 }
 
-func buildProgressBar(ratio float64, oldRatio float64, columns int, colorFill string, colorEmpty string) string {
+func buildUtilizationBarHorizontal(ratio float64, oldRatio float64, columns int, colorFill string, colorEmpty string) (barText string) {
 	var (
 		countFill    int    = 0
-		oldCountFill        = 0
-		countEmpty          = columns // default char count to total box columns (box width)
-		barText      string = ""
-		charUsed            = barSymbols[4]
-		charOld             = barSymbols[2]
-		charEmpty           = barSymbols[1]
-		charStart           = barSymbols[4]
-		charEnd             = barSymbols[1]
+		oldCountFill int    = 0
+		countEmpty   int    = columns // default char count to total box columns (box width)
+		charUsed     string = barSymbols[4]
+		charOld      string = barSymbols[2]
+		charEmpty    string = barSymbols[1]
+		charStart    string = barSymbols[4]
+		charEnd      string = barSymbols[1]
 	)
 
 	// Color the bar based on how full they are
@@ -147,6 +146,21 @@ func buildProgressBar(ratio float64, oldRatio float64, columns int, colorFill st
 		barText += charEmpty
 	}
 	return barText + charEnd + WHITE + "\n" // Cap off the end of the bar and return
+}
+
+func buildUtilizationBarVertical(ratio float64, oldRatio float64, columns int, colorFill string, colorEmpty string) (barText string) {
+	//var (
+	//	countFill    int    = 0
+	//	oldCountFill int    = 0
+	//	countEmpty   int    = columns // default char count to total box columns (box width)
+	//	charUsed     string = barSymbols[4]
+	//	charOld      string = barSymbols[2]
+	//	charEmpty    string = barSymbols[1]
+	//	charStart    string = barSymbols[4]
+	//	charEnd      string = barSymbols[1]
+	//)
+
+	return barText
 }
 
 func getInnerBoxSize(box *tview.Box, oldWidth int, oldHeight int) (width int, height int,
@@ -540,7 +554,7 @@ func UpdateDisk(app *tview.Application, box *tview.TextView, showBorder bool) {
 				dsk.Mountpoint+" "+vDiskStr, diskCapacityStr, width, " ")
 
 			// TODO: reflect disk size changes
-			boxText += buildProgressBar(
+			boxText += buildUtilizationBarHorizontal(
 				dsk.UsedPercent, oldDisksStats[i].UsedPercent, width, BLUE, WHITE)
 
 			//boxText += "width=" + strconv.Itoa(width) + ", height=" + strconv.Itoa(height) + "\n"
@@ -611,7 +625,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		gpuMemoryTitleRow := buildBoxTitleStatRow("Mem:", gpuMemoryStr, width, " ")
 
 		boxText = gpuLoadTitleRow
-		gpuLoadBar := buildProgressBar(
+		gpuLoadBar := buildUtilizationBarHorizontal(
 			gpuStats[lastElement].Load, oldGPUStats[oldLastElement].Load, width, GREEN, WHITE)
 		if oldGPULoadBar == "" || oldGPULoadBar == gpuLoadBar {
 			oldGPULoadBar = gpuLoadBar
@@ -623,7 +637,7 @@ func UpdateGPU(app *tview.Application, box *tview.TextView, showBorder bool) {
 		boxText += "\n" // add an extra line gap to visually and obviously separate the info
 
 		boxText += gpuMemoryTitleRow
-		gpuMemBar := buildProgressBar(
+		gpuMemBar := buildUtilizationBarHorizontal(
 			gpuMemoryUsageRatio, oldGPUMemoryUsageRatio, width, GREEN, WHITE)
 		if oldGPUMemBar == "" || oldGPUMemBar == gpuMemBar {
 			oldGPUMemBar = gpuMemBar
@@ -681,7 +695,7 @@ func UpdateGPUTemp(app *tview.Application, box *tview.TextView, showBorder bool)
 		gpuTempRatio := float64(gpuStats[lastElement].Temperature) / 100.0
 		oldGPUTempRatio := float64(oldGPUStats[oldLastElement].Temperature / 100.0)
 
-		boxText = gpuTempTitle + buildProgressBar(gpuTempRatio, oldGPUTempRatio, width, GREEN, WHITE)
+		boxText = gpuTempTitle + buildUtilizationBarHorizontal(gpuTempRatio, oldGPUTempRatio, width, GREEN, WHITE)
 
 		oldGPUStats = gpuStats
 
@@ -735,7 +749,7 @@ func UpdateMemory(app *tview.Application, box *tview.TextView, showBorder bool) 
 		memTotalText := strconv.FormatFloat(memTotal, 'f', 1, 64) + " GB"
 
 		memoryUsedTitleRow := buildBoxTitleStatRow("Used", "Total", width, " ")
-		progressBar := buildProgressBar(
+		progressBar := buildUtilizationBarHorizontal(
 			memStats.UsedPercent/100, oldMemStats.UsedPercent/100, width, GREEN, WHITE)
 		memoryStatsRow := buildBoxTitleStatRow(memUsedText, memTotalText, width, " ")
 
