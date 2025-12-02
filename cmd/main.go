@@ -1,13 +1,13 @@
 package main
 
 import (
-	"gtm"
 	"log"
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/euheimr/gtm"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
