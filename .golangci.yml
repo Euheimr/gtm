@@ -1,0 +1,88 @@
+version: "2"
+## Configuration Documentation: https://golangci-lint.run/docs/configuration/file/
+run:
+  concurrency: 16
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true # report bugs in tests
+  allow-parallel-runners: false
+  go: "" # Keep this empty to use the Go version from the go.mod file
+
+linters:
+  # Default set of linters.
+  # The value can be:
+  # - `standard`: https://golangci-lint.run/docs/linters/#enabled-by-default
+  # - `all`: enables all linters by default.
+  # - `none`: disables all linters by default.
+  # - `fast`: enables only linters considered as "fast" (`golangci-lint help linters --json | jq '[ .[] | select(.fast==true) ] | map(.name)'`).
+  # Default: standard
+  default: standard
+  settings:
+    lll:
+      # Max line length, lines longer will be reported - Default: 120.
+      line-length: 100
+      # Tab width in spaces - Default: 1
+      tab-width: 1
+    funlen:
+      lines: 100
+    gocognit:
+      min-complexity: 35
+    nestif:
+      min-complexity: 4
+    gosec:
+      excludes:
+        - G108 # Profiling endpoint is automatically exposed on /debug/pprof
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST1000" # package comment
+        - "-ST1003" # struct field json tag name checking
+        - "-ST1023" # omit type from var declaration
+        - "-QF1011" # omit type from var declaration
+  enable:
+    #- cyclop
+    #- forcetypeassert
+    - gocritic
+    - godot
+    - gosec
+    - lll
+    - modernize
+    #- nestif
+    - nlreturn
+    #- noctx
+    #- nonamedreturns
+    #- perfsprint
+    #- unparam
+    #- varnamelen
+    - wsl_v5
+  disable:
+    ### Deprecated linters
+    - wsl # currently using wsl_v5
+
+    ### Explicitly disabled linters
+    - depguard # checks if packages are in an "allowed" list... not needed
+    - noinlineerr # i use inline errors because i find it more readable; deal with it
+    - mnd # magic number detection - i calculate percentages or define layout proportions
+    - exhaustive # check exhaustiveness of switch statements
+    - exhaustruct # check for missing struct fields
+    - gochecknoglobals # very intentionally I use globals where it makes sense
+    - gochecknoinits # what's the problem with init()?
+
+    ### May enable later:
+    - revive # disable function comments for now...
+    - godox # disable scanning for TODO/FIXME/BUG etc
+    - unused # check for unused functions, vars & var slices
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+  settings:
+    golines:
+      max-len: 100
+      tab-len: 1
+      shorten-comments: false
+      reformat-tags: true
+      chain-split-dots: true
