@@ -18,42 +18,61 @@ linters:
   # Default: standard
   default: standard
   settings:
+    cyclop:
+      # The maximal code complexity to report - Default: 10
+      max-complexity: 15
+      # The maximal average package complexity - Default: 0.0
+      # If it's higher than 0.0 (float) the check is enabled.
+      package-average: 0.0
+    funlen:
+      lines: 100
+    gocognit:
+      min-complexity: 30
     lll:
       # Max line length, lines longer will be reported - Default: 120.
       line-length: 100
       # Tab width in spaces - Default: 1
       tab-width: 1
-    funlen:
-      lines: 100
-    gocognit:
-      min-complexity: 35
     nestif:
-      min-complexity: 4
+      min-complexity: 7
     gosec:
       excludes:
-        - G108 # Profiling endpoint is automatically exposed on /debug/pprof
+        - G108 # disable "Profiling endpoint is automatically exposed on /debug/pprof"
     staticcheck:
       checks:
         - "all"
-        - "-ST1000" # package comment
-        - "-ST1003" # struct field json tag name checking
-        - "-ST1023" # omit type from var declaration
-        - "-QF1011" # omit type from var declaration
+        - "-ST1000" # disable package comment check
+      initialisms:
+        - id # allow 'id' instead of 'ID' in struct json tags
+    varnamelen:
+      max-distance: 6
+      min-name-length: 2
+      check-receiver: false
+      check-return: false
+      check-type-param: false
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-names:
+        - i # very very commonly short for index
   enable:
-    #- cyclop
-    #- forcetypeassert
+    - cyclop
+    - forcetypeassert
+    - funlen
+    - gocognit
     - gocritic
-    - godot
+    #- godot
     - gosec
     - lll
     - modernize
-    #- nestif
+    - nestif
     - nlreturn
-    #- noctx
-    #- nonamedreturns
-    #- perfsprint
-    #- unparam
-    #- varnamelen
+    - noctx
+    - nonamedreturns
+    - perfsprint
+    - unparam
+    - varnamelen
+    - wrapcheck
     - wsl_v5
   disable:
     ### Deprecated linters
