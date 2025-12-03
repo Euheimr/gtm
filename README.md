@@ -1,6 +1,6 @@
 # gtm
 
-_**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource monitor written entirely in [Go](https://go.dev/)_
+_**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource monitor written entirely in pure [Go](https://go.dev/)_
 
 ## Table of Contents
 
@@ -18,24 +18,21 @@ _**G**olang **T**ask **M**anager - text-based UI (TUI) task manager and resource
       3. [Example Projects](#example-projects)
 3. [Contributing](#contributing)
 
----
 
 ## About
 
 ### Why
 
 - I really enjoy [Go](https://go.dev/)
-- `htop`, `btop` and `top` are great are platform-specific
-- Similar existing tools are _platform-specific_ (operating system and/or CPU architecture-restrictive)
+- `htop`, `btop` and `top` are great, but platform-specific
 
 
 ### Requirements
 
-1. I want a task manager and resource monitor with alerts
-2. Must be usable from a terminal via SSH
-3. Must be **FULLY** cross-platform (Linux, Windows & macOS)
-4. Operate as expected in `BASH`, `zsh`, `Powershell` & `wt` (_new [microsoft windows terminal](https://github.com/microsoft/terminal) packaged with Win11_)
-5. Entirely written in "pure" [Go](https://go.dev/) ([without using cgo](https://dave.cheney.net/2016/01/18/cgo-is-not-go))
+- Fast terminal task manager & resource monitor with alerts (usable from a terminal via SSH)
+- Cross-platform (Linux, Windows & macOS)
+- Operate as expected in `BASH`, `zsh`, `Powershell` & `wt` (_new [microsoft windows terminal](https://github.com/microsoft/terminal) packaged with Win11_)
+- Entirely written in "pure" [Go](https://go.dev/) ([without using cgo](https://dave.cheney.net/2016/01/18/cgo-is-not-go))
 
 **_Please note_**: I don't plan on supporting `cmd` aka `conhost.exe` as it does **not support unicode**. Use `Powershell` or `wt` instead.
 
@@ -56,6 +53,7 @@ _Source Code Structure_:
      ├─ config.go
      ├─ devices.go
      ├─ devices_windows.go
+     ├─ devices_unix.go
      ├─ log.go
      └─ ui.go
 
@@ -74,7 +72,7 @@ This is to ensure I don't accidentally manage to use `cgo` and then run into wei
 ### Building
 
 #### Prerequisites:
-1. [Go 1.21+](https://go.dev/)
+1. [Go 1.25+](https://go.dev/)
 2. (Windows Only): Requires [Cygwin](https://cygwin.com/) to run the `run.sh` script. (the script uses cleans up old binaries, etc ... might make a `Powershell` script later to get around this)
 
 #### Build Steps:
@@ -166,6 +164,6 @@ or `sh ./scripts/run.sh -bo`
 
 ## Contributing
 
-**I'm not taking pull requests for now**, but will personally take on reported issues.
+**I'm not taking pull requests for now**, but will take on reasonably reported issues.
 
 _I will change this in the future (sorry, not ready for this yet)._
