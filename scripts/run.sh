@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 export CGO_ENABLED=0
 export GOEXPERIMENT=greenteagc  # Enable the new GC introduced with 1.25 !
 
@@ -12,6 +12,12 @@ SCRIPT_NAME="${SCRIPT_NAME##*/}"  # get the script name
 build_attempted=0
 binary_postfix=""
 
+# This is meant to rename the binary with the customary windows .EXE only if we are
+#   building on windows.
+if [ "${OS}" = "Windows_NT" ]; then
+  binary_postfix=".exe"
+fi
+
 # Get the current directory of this script
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIR="${DIR%/}"  # strip trailing slash
@@ -23,12 +29,6 @@ SUBDIR="${DIR##*/}"
 if [ "${SUBDIR}" = "scripts" ]; then
     # go one directory above scripts/
     cd ..
-fi
-
-# This is meant to rename the binary with the customary windows .EXE only if we are
-#   building on windows.
-if [ "${OS}" = "Windows_NT" ]; then
-  binary_postfix=".exe"
 fi
 
 BINARY_NAME=${BINARY_NAME}${binary_postfix}

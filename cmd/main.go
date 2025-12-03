@@ -76,6 +76,7 @@ func init() {
 	gtm.DisksStats()
 	gtm.MemoryStats()
 	gtm.NetworkStats()
+
 	if gtm.HasGPU {
 		gtm.GPUStats()
 	}
@@ -100,10 +101,12 @@ func init() {
 			Temp:  tview.NewTextView(),
 		}
 	}
+
+	log.Print("Init main")
 }
 
 func setupLayout() {
-	slog.Info("Setting up layout ...")
+	slog.Debug("Setting up layout ...")
 
 	// This is the BASE box containing ALL OTHER boxes
 	fMain = tview.NewFlex()
@@ -113,12 +116,15 @@ func setupLayout() {
 	// SETUP PRIMARY LAYOUT
 	// ROW 1 COLUMN 1
 	cpuParentBox := tview.NewFlex()
+
 	layout.CPU.Stats.SetTitle(" " + gtm.CPUModelName() + " ")
 
 	cpuParentBox.AddItem(layout.CPU.Stats, 0, 5, false)
+
 	if gtm.IsAdmin {
 		cpuParentBox.AddItem(layout.CPU.Temp, 0, 2, false)
 	}
+
 	flexRow1 := tview.NewFlex()
 	flexRow1.AddItem(cpuParentBox, 0, 6, false)
 
@@ -136,6 +142,7 @@ func setupLayout() {
 		AddItem(layout.Network, 0, 2, false).
 		AddItem(layout.Disk, 0, 2, false),
 		0, 1, false)
+
 	if gtm.HasGPU {
 		// ROW 2 COLUMN 3
 		flexRow2.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
@@ -153,6 +160,7 @@ func setupLayout() {
 	fMain.AddItem(flexRow1, 0, 22, false).
 		AddItem(flexRow2, 0, 40, false).
 		AddItem(flexRow3, 0, 1, false)
+	slog.Debug("Constructed main layout")
 }
 
 func main() {
@@ -172,29 +180,33 @@ func main() {
 		default:
 			return event
 		}
+
 		return event
 	})
 
 	// We want to have the initial loading to be instant and not lag when the app first loads
 	// For example: we have an update interval 1 to 5 seconds. If we first run the app, it
 	// 	will take 1-5 seconds for the data & UI elements to show up. This is undesirable.
-	// To fix this, we set the update interval to 1ms while the goroutines spin up, then set
-	// 	it back to default right before the app.Run() call
-	defaultUpdate := gtm.Cfg.UpdateInterval
+	// To fix this, we set the update interval to 1ms while the goroutines spin up, then
+	// 	reset to default right before the app.Run() call
 	gtm.Cfg.SetUpdateInterval(time.Millisecond)
 
 	// Setup goroutines handling the drawing of each box here
 	slog.Info("Setting up UI goroutines ...")
+
 	go gtm.UpdateCPU(app, layout.CPU.Stats, true)
 	go gtm.UpdateDisk(app, layout.Disk, true)
 	go gtm.UpdateMemory(app, layout.Memory, true)
 	go gtm.UpdateNetwork(app, layout.Network, true)
 	go gtm.UpdateProcesses(app, layout.Processes, true)
+
 	if gtm.IsAdmin {
 		go gtm.UpdateCPUTemp(app, layout.CPU.Temp, true)
 	}
+
 	if gtm.HasGPU {
 		slog.Info("GPU detected! Setting up GPU/GPUTemp UI goroutines ...")
+
 		go gtm.UpdateGPU(app, layout.GPU.Stats, true)
 		go gtm.UpdateGPUTemp(app, layout.GPU.Temp, true)
 	}
@@ -204,7 +216,8 @@ func main() {
 
 	// START APP
 	slog.Info("Starting the app ...")
-	gtm.Cfg.SetUpdateInterval(defaultUpdate)
+	gtm.Cfg.ResetUpdateInterval()
+
 	if err := app.Run(); err != nil {
 		slog.Error("Failed to run the app! " + err.Error())
 		panic(err)

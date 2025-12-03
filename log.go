@@ -2,8 +2,10 @@ package gtm
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,93 +27,131 @@ var LevelNames = map[slog.Leveler]string{
 	slog.LevelError: strings.ToUpper(slog.LevelError.String()),
 }
 
+func createLogDir(dir string) error {
+	err := os.Mkdir(dir, 0o750)
+	if errors.Is(err, fs.ErrExist) {
+		slog.Debug("Log directory exists")
+	} else {
+		return fmt.Errorf("failed to create directory: %s", dir)
+	}
+
+	return nil
+}
+
+func deleteLogs(dir string) error {
+	if Cfg.DeleteOldLogs {
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			return fmt.Errorf("problem occurred reading directory '%s': %s", dir, err.Error())
+		}
+
+		for _, file := range files {
+			splitFilename := strings.Split(file.Name(), ".")
+			fileType := splitFilename[len(splitFilename)-1]
+
+			// Precautionary measure to ensure we only delete files that end in .log and not
+			// deleting directories named 'log'
+			if !file.IsDir() && fileType == "log" {
+				fp := filepath.Join(dir, file.Name())
+				if err = os.Remove(fp); err != nil {
+					return fmt.Errorf("failed to delete log file: %s", file.Name())
+				} else {
+					log.Printf("Successfully deleted log file: '%s' at '%s'", file.Name(), dir)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func createLogFile(dir string, level slog.Leveler) (*os.File, error) {
+	timestamp := time.Now().Format(time.DateTime)
+	timestampString := strings.ReplaceAll(timestamp, ":", ".")
+	timestampString = strings.ReplaceAll(timestampString, " ", "_")
+
+	logFilepath := filepath.Join(dir, timestampString+"_"+LevelNames[level]+".log")
+
+	file, err := os.Create(filepath.Clean(logFilepath))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create log file at %s", logFilepath)
+	}
+
+	return file, nil
+}
+
 func SetupFileLogging() {
 	var (
 		file io.Writer
 		opts *slog.HandlerOptions
 	)
+
+	log.Println("Setup file logging ...")
+
 	opts = &slog.HandlerOptions{
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				levelName, exists := LevelNames[level]
-				if !exists {
-					levelName = level.String()
+		Level:     slog.LevelInfo,
+		AddSource: false,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if attr.Key == slog.LevelKey {
+				level, ok := attr.Value.Any().(slog.Level)
+				if !ok {
+					log.Fatal("attr.Value.Any() is not of type slog.Level !")
 				}
-				a.Value = slog.StringValue(levelName)
+
+				switch level {
+				case LevelPerf:
+					attr.Value = slog.StringValue(LevelNames[LevelPerf])
+				case slog.LevelDebug:
+					attr.Value = slog.StringValue(LevelNames[slog.LevelDebug])
+				case slog.LevelInfo:
+					attr.Value = slog.StringValue(LevelNames[slog.LevelInfo])
+				case slog.LevelWarn:
+					attr.Value = slog.StringValue(LevelNames[slog.LevelWarn])
+				case slog.LevelError:
+					attr.Value = slog.StringValue(LevelNames[slog.LevelError])
+				}
 			}
-			return a
+
+			return attr
 		},
+	}
+
+	if Cfg.PerformanceLogging {
+		opts.Level = LevelPerf
+	} else if Cfg.Debug {
+		opts.Level = slog.LevelDebug
 	}
 
 	if Cfg.TraceFunctionLogging {
 		opts.AddSource = true
-	} else {
-		opts.AddSource = false
-	}
-
-	if Cfg.Debug && Cfg.PerformanceLogging {
-		opts.Level = LevelPerf
-	} else if Cfg.Debug {
-		opts.Level = slog.LevelDebug
-	} else {
-		opts.Level = slog.LevelInfo
-	}
-
-	opts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == slog.LevelKey {
-			level := a.Value.Any().(slog.Level)
-
-			switch level {
-			case slog.LevelDebug:
-				a.Value = slog.StringValue(LevelNames[slog.LevelDebug])
-			case LevelPerf:
-				a.Value = slog.StringValue(LevelNames[LevelPerf])
-			case slog.LevelInfo:
-				a.Value = slog.StringValue(LevelNames[slog.LevelInfo])
-			case slog.LevelWarn:
-				a.Value = slog.StringValue(LevelNames[slog.LevelWarn])
-			case slog.LevelError:
-				a.Value = slog.StringValue(LevelNames[slog.LevelError])
-			}
-		}
-		return a
 	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		slog.Error("Failed to get current working directory !")
+		log.Fatal("Failed to get current working directory !")
 	}
+
 	logsDir := filepath.Join(cwd, "log")
-
-	if Cfg.DeleteOldLogs {
-		if err = os.RemoveAll(logsDir); err != nil {
-			slog.Error("Failed to remove old log files !")
-		}
-	}
-
-	err = os.Mkdir(logsDir, 0750)
-	if errors.Is(err, fs.ErrExist) {
-		slog.Debug("Log directory exists")
-	} else if errors.Is(err, fs.ErrNotExist) {
-		slog.Error("Failed to create directory: " + logsDir + " !")
+	if err = createLogDir(logsDir); err != nil {
+		log.Fatal(err.Error())
 	}
 
 	if err = os.Chdir(logsDir); err != nil {
-		slog.Error("Failed to change directory: " + logsDir)
+		log.Fatalf("Failed to change directory: %s", logsDir)
 	}
 
-	timestamp := time.Now().Format(time.DateTime)
-	timestampString := strings.ReplaceAll(timestamp, ":", ".")
-	timestampString = strings.ReplaceAll(timestampString, " ", "_")
+	if err = deleteLogs(logsDir); err != nil {
+		log.Fatal(err.Error())
+	}
 
-	logFilepath := filepath.Join(logsDir, timestampString+"_"+LevelNames[opts.Level]+".log")
-
-	if file, err = os.Create(logFilepath); err != nil {
-		slog.Error("Failed to create log file at " + logFilepath + " !")
+	file, err = createLogFile(logsDir, opts.Level)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
 	fileHandler := slog.NewJSONHandler(file, opts)
 	fileLogger := slog.New(fileHandler)
+
 	slog.SetDefault(fileLogger)
+	slog.Debug("File logging initialized")
 }
