@@ -55,8 +55,18 @@ func init() {
 		go func() {
 			// For docs, see: https://pkg.go.dev/runtime/pprof and:
 			//	https://github.com/google/pprof/blob/main/doc/README.md
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			server := &http.Server{
+				Addr:              "localhost:6060",
+				ReadHeaderTimeout: 3 * time.Second,
+			}
+
+			err := server.ListenAndServe()
+			if err != nil {
+				panic(err)
+			}
 		}()
+
+		slog.Debug("Performance profiler started. Go to: 'http://localhost:6060/debug/pprof/'")
 	}
 
 	// Seed the initial values & data before setting up the rest of the app
